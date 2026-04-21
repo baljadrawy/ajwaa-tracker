@@ -205,7 +205,7 @@ export function TicketDetailPage() {
                 <div className={styles.detailItem}>
                   <span className={styles.detailLabel}>تاريخ الرصد</span>
                   <span className={styles.detailValue}>
-                    {ticket.observed_date ? new Date(ticket.observed_date).toLocaleDateString('ar-SA') : '-'}
+                    {ticket.observed_date ? new Date(ticket.observed_date).toLocaleDateString('ar-SA-u-nu-latn') : '-'}
                   </span>
                 </div>
                 <div className={styles.detailItem}>
@@ -216,7 +216,7 @@ export function TicketDetailPage() {
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>الموعد المتوقع</span>
                     <span className={styles.detailValue}>
-                      {new Date(ticket.expected_resolution_date).toLocaleDateString('ar-SA')}
+                      {new Date(ticket.expected_resolution_date).toLocaleDateString('ar-SA-u-nu-latn')}
                     </span>
                   </div>
                 )}
@@ -224,7 +224,7 @@ export function TicketDetailPage() {
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>تاريخ الإغلاق</span>
                     <span className={styles.detailValue}>
-                      {new Date(ticket.closed_date).toLocaleDateString('ar-SA')}
+                      {new Date(ticket.closed_date).toLocaleDateString('ar-SA-u-nu-latn')}
                     </span>
                   </div>
                 )}
@@ -242,7 +242,7 @@ export function TicketDetailPage() {
                       <span className={styles.auditArrow}>←</span>
                       <span className={styles.auditStatus}>{entry.new_status}</span>
                       <span className={styles.auditMeta}>
-                        {entry.changed_by_name} — {new Date(entry.changed_at).toLocaleDateString('ar-SA')}
+                        {entry.changed_by_name} — {new Date(entry.changed_at).toLocaleDateString('ar-SA-u-nu-latn')}
                       </span>
                     </div>
                   ))}
@@ -264,7 +264,7 @@ export function TicketDetailPage() {
                       <div className={styles.commentHeader}>
                         <span className={styles.commentAuthor}>{comment.created_by_name || 'مستخدم'}</span>
                         <span className={styles.commentDate}>
-                          {new Date(comment.created_at).toLocaleDateString('ar-SA')}
+                          {new Date(comment.created_at).toLocaleDateString('ar-SA-u-nu-latn')}
                         </span>
                       </div>
                       <p className={styles.commentText}>{comment.comment_text}</p>

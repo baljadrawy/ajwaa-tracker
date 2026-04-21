@@ -129,7 +129,7 @@ export function TicketsPage() {
 
   const totalPages = Math.ceil(tickets.length / itemsPerPage)
 
-  const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-SA', {
+  const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-SA-u-nu-latn', {
     year: 'numeric', month: '2-digit', day: '2-digit'
   }) : '-'
 

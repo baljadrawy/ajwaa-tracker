@@ -83,7 +83,7 @@ export function DashboardPage() {
 
   const navigate = useNavigate()
 
-  const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-SA', {
+  const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-SA-u-nu-latn', {
     year: 'numeric', month: '2-digit', day: '2-digit'
   }) : '-'
 

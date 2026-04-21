@@ -107,7 +107,7 @@ export function LogsPage() {
     setPage(1)
   }
 
-  const fmt = (d) => d ? new Date(d).toLocaleString('ar-SA', {
+  const fmt = (d) => d ? new Date(d).toLocaleString('ar-SA-u-nu-latn', {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   }) : '-'
