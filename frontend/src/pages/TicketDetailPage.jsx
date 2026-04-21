@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
-import { ticketAPI } from '../services/api'
+import { ticketAPI, attachmentAPI } from '../services/api'
 import api from '../services/api'
 import { ArrowRight, Send, FileText, MessageSquare, Download, Edit2, X, Check, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -114,6 +114,28 @@ export function TicketDetailPage() {
       toast.error('فشل إضافة التعليق')
     } finally {
       setCommenting(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا التعليق؟')) return
+    try {
+      await api.delete(`/tickets/${id}/comments/${commentId}`)
+      toast.success('تم حذف التعليق')
+      fetchTicket()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'فشل حذف التعليق')
+    }
+  }
+
+  const handleDeleteAttachment = async (attachmentId, fileName) => {
+    if (!window.confirm(`هل أنت متأكد من حذف الملف "${fileName}"؟`)) return
+    try {
+      await attachmentAPI.delete(attachmentId)
+      toast.success('تم حذف الملف')
+      fetchTicket()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'فشل حذف الملف')
     }
   }
 
@@ -293,6 +315,15 @@ export function TicketDetailPage() {
                         <span className={styles.commentDate}>
                           {new Date(comment.created_at).toLocaleDateString('ar-SA-u-nu-latn')}
                         </span>
+                        {(user?.role === 'admin' || comment.created_by === user?.id) && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className={styles.deleteCommentBtn}
+                            title="حذف التعليق"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                       <p className={styles.commentText}>{comment.comment_text}</p>
                     </div>
@@ -332,15 +363,26 @@ export function TicketDetailPage() {
               {attachments.length > 0 ? (
                 <div className={styles.attachmentsList}>
                   {attachments.map((att) => (
-                    <button
-                      key={att.id}
-                      onClick={() => handleDownload(att.id, att.file_name)}
-                      className={styles.attachmentLink}
-                      type="button"
-                    >
-                      <Download size={13} />
-                      <span className={styles.attachmentName}>{att.file_name}</span>
-                    </button>
+                    <div key={att.id} className={styles.attachmentRow}>
+                      <button
+                        onClick={() => handleDownload(att.id, att.file_name)}
+                        className={styles.attachmentLink}
+                        type="button"
+                      >
+                        <Download size={13} />
+                        <span className={styles.attachmentName}>{att.file_name}</span>
+                      </button>
+                      {(user?.role === 'admin' || att.uploaded_by === user?.id) && (
+                        <button
+                          onClick={() => handleDeleteAttachment(att.id, att.file_name)}
+                          className={styles.deleteAttachmentBtn}
+                          title="حذف الملف"
+                          type="button"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (

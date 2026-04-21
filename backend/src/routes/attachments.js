@@ -131,12 +131,13 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// DELETE /api/attachments/:id — صاحب المرفق أو المشرف
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
     const result = await pool.query(
-      'SELECT file_path FROM attachments WHERE id = $1',
+      'SELECT file_path, user_id FROM attachments WHERE id = $1',
       [id]
     );
 
@@ -144,7 +145,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'الملف غير موجود' });
     }
 
-    const fullPath = path.join(uploadsDir, result.rows[0].file_path);
+    const attachment = result.rows[0];
+
+    if (req.user.role !== 'admin' && attachment.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'غير مصرح لك بحذف هذا الملف' });
+    }
+
+    const fullPath = path.join(uploadsDir, attachment.file_path);
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
     }

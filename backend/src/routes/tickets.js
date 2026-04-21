@@ -352,6 +352,35 @@ router.post(
   }
 );
 
+// DELETE /api/tickets/:ticketId/comments/:commentId — صاحب التعليق أو المشرف
+router.delete('/:ticketId/comments/:commentId', authenticateToken, async (req, res) => {
+  try {
+    const { ticketId, commentId } = req.params;
+
+    const result = await pool.query(
+      'SELECT id, user_id FROM comments WHERE id = $1 AND ticket_id = $2',
+      [commentId, ticketId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'التعليق غير موجود' });
+    }
+
+    const comment = result.rows[0];
+
+    if (req.user.role !== 'admin' && comment.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'غير مصرح لك بحذف هذا التعليق' });
+    }
+
+    await pool.query('DELETE FROM comments WHERE id = $1', [commentId]);
+    res.json({ message: 'تم حذف التعليق' });
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    logError({ req, statusCode: 500, error });
+    res.status(500).json({ error: 'حدث خطأ في الخادم' });
+  }
+});
+
 // DELETE /api/tickets/:id — المشرف يحذف أي تذكرة، المنسق يحذف تذاكره فقط إذا كانت "جديدة"
 router.delete('/:id', authenticateToken, roleCheck('admin', 'coordinator'), async (req, res) => {
   try {

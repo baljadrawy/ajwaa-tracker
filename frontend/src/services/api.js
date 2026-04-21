@@ -70,6 +70,11 @@ export const userAPI = {
   get: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
+  restore: (id) => api.put(`/users/${id}/restore`),
+}
+
+export const attachmentAPI = {
+  delete: (id) => api.delete(`/attachments/${id}`),
 }
 
 // Sector APIs

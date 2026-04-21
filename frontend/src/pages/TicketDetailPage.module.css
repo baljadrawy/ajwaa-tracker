@@ -182,6 +182,20 @@
   color: var(--text-light);
 }
 
+.deleteCommentBtn {
+  margin-right: auto;
+  background: none;
+  border: none;
+  color: #d1d5db;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.deleteCommentBtn:hover { color: #ef4444; }
+
 .commentText {
   font-size: 14px;
   color: var(--text-secondary);
@@ -278,22 +292,48 @@
   gap: 8px;
 }
 
+.attachmentRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
 .attachmentLink {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
   padding: 8px 12px;
   background-color: var(--bg);
   border-radius: 4px;
   font-size: 13px;
   color: var(--accent-blue);
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .attachmentLink:hover {
   background-color: var(--border-color);
   color: var(--primary);
 }
+
+.deleteAttachmentBtn {
+  background: none;
+  border: none;
+  color: #d1d5db;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.deleteAttachmentBtn:hover { color: #ef4444; }
 
 .loadingContainer {
   display: flex;

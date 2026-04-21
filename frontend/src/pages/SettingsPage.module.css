@@ -195,6 +195,25 @@ table tr:hover {
   background-color: rgba(239, 68, 68, 0.1);
 }
 
+.restoreButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.restoreButton:hover { background: #dcfce7; border-color: #4ade80; }
+
+.inactiveRow { opacity: 0.6; background: #fafafa; }
+
 .itemsList {
   background: white;
   border-radius: 8px;

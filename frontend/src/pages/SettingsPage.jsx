@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { userAPI, sectorAPI, departmentAPI, phaseAPI } from '../services/api'
-import { Plus, Trash2, Edit, X, Search, Key } from 'lucide-react'
+import { Plus, Trash2, Edit, X, Search, Key, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import styles from './SettingsPage.module.css'
 import api from '../services/api'
@@ -148,6 +148,15 @@ export function SettingsPage() {
     } catch { toast.error('فشل تغيير كلمة المرور') }
   }
 
+  const handleRestore = async (id, name) => {
+    if (!confirm(`هل أنت متأكد من استعادة المستخدم "${name}"؟`)) return
+    try {
+      await userAPI.restore(id)
+      toast.success('تم استعادة المستخدم')
+      loadData()
+    } catch (e) { toast.error(e.response?.data?.error || 'فشل الاستعادة') }
+  }
+
   const getSectorName = (id) => sectors.find(s => s.id === id || String(s.id) === String(id))?.name || '-'
 
   return (
@@ -202,23 +211,34 @@ export function SettingsPage() {
                 </form>
 
                 <div className={styles.table}>
-                  <h2 className={styles.tableTitle}>المستخدمون الحاليون ({users.length})</h2>
+                  <h2 className={styles.tableTitle}>
+                    المستخدمون ({users.filter(u => u.is_active).length} نشط
+                    {users.filter(u => !u.is_active).length > 0 && ` · ${users.filter(u => !u.is_active).length} معطل`})
+                  </h2>
                   <table>
                     <thead>
                       <tr><th>الاسم</th><th>اسم المستخدم</th><th>الدور</th><th>الحالة</th><th>الإجراءات</th></tr>
                     </thead>
                     <tbody>
                       {users.map(u => (
-                        <tr key={u.id}>
+                        <tr key={u.id} className={!u.is_active ? styles.inactiveRow : ''}>
                           <td>{u.full_name}</td>
                           <td>{u.username}</td>
                           <td><span className={`${styles.roleBadge} ${styles[u.role]}`}>{ROLE_LABELS[u.role] || u.role}</span></td>
                           <td><span className={`${styles.statusBadge} ${u.is_active ? styles.active : styles.inactive}`}>{u.is_active ? 'نشط' : 'معطل'}</span></td>
                           <td>
                             <div className={styles.actionButtons}>
-                              <button onClick={() => openEdit('user', u)} className={styles.editButton} title="تعديل"><Edit size={15} /></button>
-                              <button onClick={() => { setPwModal({ userId: u.id, username: u.username }); setNewPassword('') }} className={styles.editButton} title="تغيير كلمة المرور"><Key size={15} /></button>
-                              <button onClick={() => handleDelete('user', u.id, u.full_name)} className={styles.deleteButton} title="حذف"><Trash2 size={15} /></button>
+                              {u.is_active ? (
+                                <>
+                                  <button onClick={() => openEdit('user', u)} className={styles.editButton} title="تعديل"><Edit size={15} /></button>
+                                  <button onClick={() => { setPwModal({ userId: u.id, username: u.username }); setNewPassword('') }} className={styles.editButton} title="تغيير كلمة المرور"><Key size={15} /></button>
+                                  <button onClick={() => handleDelete('user', u.id, u.full_name)} className={styles.deleteButton} title="تعطيل"><Trash2 size={15} /></button>
+                                </>
+                              ) : (
+                                <button onClick={() => handleRestore(u.id, u.full_name)} className={styles.restoreButton} title="استعادة">
+                                  <RotateCcw size={15} /> استعادة
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
