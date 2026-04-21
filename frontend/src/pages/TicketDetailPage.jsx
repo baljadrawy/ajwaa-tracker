@@ -4,7 +4,7 @@ import { Layout } from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
 import { ticketAPI } from '../services/api'
 import api from '../services/api'
-import { ArrowRight, Send, FileText, MessageSquare, Download, Edit2, X, Check } from 'lucide-react'
+import { ArrowRight, Send, FileText, MessageSquare, Download, Edit2, X, Check, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import styles from './TicketDetailPage.module.css'
 
@@ -138,6 +138,25 @@ export function TicketDetailPage() {
 
   const canEdit = user?.role === 'admin' || user?.role === 'coordinator'
 
+  // المشرف يحذف أي تذكرة — المنسق يحذف فقط تذاكره بحالة "جديدة"
+  const canDelete = user?.role === 'admin' ||
+    (user?.role === 'coordinator' && ticket?.status === 'جديدة')
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `هل أنت متأكد من حذف التذكرة ${ticket.ticket_number}؟\nلا يمكن التراجع عن هذا الإجراء.`
+    )
+    if (!confirmed) return
+    try {
+      await ticketAPI.delete(id)
+      toast.success('تم حذف التذكرة')
+      navigate('/tickets')
+    } catch (error) {
+      const msg = error.response?.data?.error || 'فشل حذف التذكرة'
+      toast.error(msg)
+    }
+  }
+
   return (
     <Layout>
       <div className={styles.container}>
@@ -148,12 +167,20 @@ export function TicketDetailPage() {
             <ArrowRight size={18} />
             العودة
           </button>
-          {canEdit && ticket.status !== 'مغلقة' && (
-            <button onClick={openStatusModal} className={styles.updateStatusBtn}>
-              <Edit2 size={16} />
-              تحديث الحالة
-            </button>
-          )}
+          <div className={styles.pageHeaderActions}>
+            {canEdit && ticket.status !== 'مغلقة' && (
+              <button onClick={openStatusModal} className={styles.updateStatusBtn}>
+                <Edit2 size={16} />
+                تحديث الحالة
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={handleDelete} className={styles.deleteBtn}>
+                <Trash2 size={16} />
+                حذف التذكرة
+              </button>
+            )}
+          </div>
         </div>
 
         {/* عنوان التذكرة */}

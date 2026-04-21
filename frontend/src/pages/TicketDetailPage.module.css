@@ -357,6 +357,34 @@
   box-shadow: 0 4px 12px rgba(35, 50, 230, 0.3);
 }
 
+.pageHeaderActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff1f2;
+  color: #dc2626;
+  border: 1.5px solid #fca5a5;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.deleteBtn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
 .statusBadge {
   display: inline-block;
   padding: 6px 14px;
