@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    platform: linux/arm64
+    container_name: ajwaa-postgres
+    environment:
+      POSTGRES_DB: ajwaa_db
+      POSTGRES_USER: ajwaa
+      POSTGRES_PASSWORD: ajwaa_pass
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ajwaa -d ajwaa_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    platform: linux/arm64
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ajwaa-backend
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ajwaa_db
+      DB_USER: ajwaa
+      DB_PASSWORD: ajwaa_pass
+      JWT_SECRET: ajwaa-jwt-secret-2026-production
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    platform: linux/arm64
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ajwaa-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
