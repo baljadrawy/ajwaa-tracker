@@ -54,7 +54,8 @@ export function NewTicketPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.serviceId || !formData.environment || !formData.description ||
+    // serviceId اختياري — التذكرة العامة لا تحتاج خدمة
+    if (!formData.environment || !formData.description ||
         !formData.classification || !formData.impact || !formData.priority || !formData.responsibility) {
       toast.error('يرجى ملء جميع الحقول المطلوبة')
       return
@@ -103,9 +104,9 @@ export function NewTicketPage() {
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label htmlFor="serviceId">الخدمة *</label>
-              <select id="serviceId" name="serviceId" value={formData.serviceId} onChange={handleChange} required className={styles.select}>
-                <option value="">اختر الخدمة</option>
+              <label htmlFor="serviceId">الخدمة <span className={styles.optionalHint}>(اختياري — اتركه فارغاً للتذاكر العامة)</span></label>
+              <select id="serviceId" name="serviceId" value={formData.serviceId} onChange={handleChange} className={styles.select}>
+                <option value="">— عام (غير مرتبط بخدمة) —</option>
                 {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>

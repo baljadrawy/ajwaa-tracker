@@ -35,18 +35,22 @@ export function TicketsPage() {
   const [filterImpact, setFilterImpact] = useState('')
   const [filterResponsibility, setFilterResponsibility] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
   const itemsPerPage = 15
 
   useEffect(() => {
     fetchTickets()
     fetchServices()
-  }, [filterStatus, filterPriority, filterService, filterClassification, filterImpact, filterResponsibility])
+  }, [filterStatus, filterPriority, filterService, filterClassification, filterImpact, filterResponsibility, currentPage])
 
   const fetchTickets = async () => {
     try {
       setLoading(true)
-      const params = {}
+      const params = {
+        limit: itemsPerPage,
+        offset: (currentPage - 1) * itemsPerPage,
+      }
       if (filterStatus)         params.status = filterStatus
       if (filterPriority)       params.priority = filterPriority
       if (filterService)        params.service = filterService
@@ -56,8 +60,12 @@ export function TicketsPage() {
       if (searchTerm)           params.search = searchTerm
 
       const response = await ticketAPI.list(params)
-      setTickets(response.data || [])
-      setCurrentPage(1)
+      // API يرجع { tickets: [...], total: N }
+      const data = response.data
+      const ticketList = Array.isArray(data) ? data : (data.tickets || [])
+      const total = data.total ?? ticketList.length
+      setTickets(ticketList)
+      setTotalCount(total)
     } catch (error) {
       toast.error('فشل تحميل التذاكر')
       console.error('Failed to fetch tickets:', error)
@@ -77,7 +85,10 @@ export function TicketsPage() {
 
   const handleSearch = (e) => {
     e.preventDefault()
-    fetchTickets()
+    setCurrentPage(1)
+    // تغيير currentPage إلى 1 سيطلق useEffect لإعادة الجلب
+    // لكن إذا كانت الصفحة بالفعل 1 نطلب يدوياً
+    if (currentPage === 1) fetchTickets()
   }
 
   const handleExport = async () => {
@@ -122,12 +133,9 @@ export function TicketsPage() {
   const hasActiveFilters = filterStatus || filterPriority || filterService ||
     filterClassification || filterImpact || filterResponsibility || searchTerm
 
-  const paginatedTickets = tickets.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
-  const totalPages = Math.ceil(tickets.length / itemsPerPage)
+  // pagination server-side — tickets هي الصفحة الحالية فقط
+  const paginatedTickets = tickets
+  const totalPages = Math.ceil(totalCount / itemsPerPage)
 
   const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-SA-u-nu-latn', {
     year: 'numeric', month: '2-digit', day: '2-digit'
@@ -228,7 +236,7 @@ export function TicketsPage() {
 
           {/* شريط المعلومات */}
           <div className={styles.infoBar}>
-            <span className={styles.totalBadge}>{tickets.length} تذكرة</span>
+            <span className={styles.totalBadge}>{totalCount} تذكرة</span>
             {hasActiveFilters && <span className={styles.filterNote}>نتائج مفلترة</span>}
           </div>
         </div>
@@ -307,7 +315,7 @@ export function TicketsPage() {
                   <ChevronRight size={16} />
                 </button>
                 <span className={styles.pageInfo}>
-                  صفحة {currentPage} من {totalPages} ({tickets.length} إجمالي)
+                  صفحة {currentPage} من {totalPages} ({totalCount} إجمالي)
                 </span>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

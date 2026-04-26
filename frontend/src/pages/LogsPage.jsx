@@ -24,6 +24,7 @@ export function LogsPage() {
   const [logs, setLogs] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [accessLogEnabled, setAccessLogEnabled] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
   const [page, setPage] = useState(1)
   const perPage = 50
@@ -43,6 +44,7 @@ export function LogsPage() {
       if (tab === 'stats') {
         const res = await api.get('/logs/stats')
         setStats(res.data)
+        setAccessLogEnabled(res.data.accessLogEnabled !== false)
       } else {
         const params = { limit: perPage, offset: (page - 1) * perPage }
         if (filterStatus)   params.status_code = filterStatus
@@ -57,6 +59,7 @@ export function LogsPage() {
         setTotal(res.data.total || 0)
       }
     } catch (e) {
+      console.error('Logs fetch error:', e)
       toast.error('فشل تحميل البيانات')
     } finally {
       setLoading(false)
@@ -192,6 +195,18 @@ export function LogsPage() {
               )}
               <span className={styles.totalBadge}>{total} سجل</span>
             </div>
+
+            {/* تنبيه لو access_log غير مفعّل */}
+            {tab === 'access' && !accessLogEnabled && (
+              <div className={styles.migrationWarning}>
+                <AlertTriangle size={18} />
+                <div>
+                  <strong>جدول سجل الطلبات غير موجود</strong>
+                  <p>شغّل هذا الأمر لتفعيله:</p>
+                  <code>docker compose exec -T postgres psql -U ajwaa -d ajwaa_db &lt; db/migrate_add_access_log.sql</code>
+                </div>
+              </div>
+            )}
 
             {/* الجدول */}
             {logs.length === 0 ? (

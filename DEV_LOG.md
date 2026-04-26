@@ -4,6 +4,91 @@
 
 ---
 
+## 2026-04-26 — تحسينات الواجهة + حذف التذاكر والتعليقات والمرفقات + استعادة المستخدمين
+
+### 1. تحسين صفحة التذاكر (TicketsPage)
+- **عمود المنشئ:** أُضيف عمود "المنشئ" للمشرف والمدير فقط — يعرض `ticket.created_by_name`
+- **عمود التاريخ:** أُضيف عمود "التاريخ" يعرض `ticket.updated_at` (آخر تحديث)
+- **إجمالي التذاكر:** شارة `.totalBadge` تعرض عدد النتائج الإجمالي
+- **زر مسح الفلاتر:** `.resetBtn` يظهر فقط عند تفعيل أي فلتر مع ملاحظة نصية للنتائج
+- **حد الصفحة:** ثُبّت `itemsPerPage = 15` (كان قابلاً للتغيير)
+- **تنسيق التاريخ:** `ar-SA-u-nu-latn` — أرقام لاتينية مع نص عربي (راجع البند 3)
+
+### 2. تحسين لوحة التحكم (DashboardPage)
+- **أشرطة البيانات:** `BarRow` component — أشرطة نسبية لتوزيع الحالات والأولويات
+- **نسبة الإغلاق:** شريط gradient يعرض نسبة التذاكر المغلقة
+- **دائرة المسؤولية:** `conic-gradient` CSS — توزيع بين "الهيئة" و"شركة علم" (بدون مكتبة خارجية)
+- **آخر التذاكر:** جدول يعرض آخر 8 تذاكر — ينتقل للتفاصيل عند النقر (`<tr onClick>`)
+- **جلب متوازٍ:** `dashboardAPI.stats()` و `ticketAPI.list({ limit: 8 })` في `Promise.all`
+- **إصلاح:** `<Link>` داخل `<tbody>` كان HTML غير صالح — استُبدل بـ `<tr onClick={() => navigate(...)}`
+
+### 3. إصلاح الأرقام العربية/الهندية في التواريخ
+- **المشكلة:** `ar-SA` locale يستخدم الأرقام الهندية الشرقية (٢١‏/٤‏/٢٠٢٦)
+- **الحل:** استبدال `'ar-SA'` بـ `'ar-SA-u-nu-latn'` في جميع استدعاءات `toLocaleDateString`
+- **الملفات المعدّلة (4 ملفات، replace_all):**
+  - `frontend/src/pages/TicketsPage.jsx`
+  - `frontend/src/pages/DashboardPage.jsx`
+  - `frontend/src/pages/LogsPage.jsx`
+  - `frontend/src/pages/TicketDetailPage.jsx`
+
+### 4. حذف التذاكر
+- **Backend — `DELETE /api/tickets/:id`:**
+  - المشرف: يحذف أي تذكرة
+  - المنسق: يحذف تذاكره فقط إذا كانت بحالة "جديدة" (`coordinator_id = req.user.id`)
+  - حذف متسلسل: attachments → comments → audit_log → ticket
+- **Frontend — TicketDetailPage.jsx:**
+  - `canDelete` logic: مشرف دائماً، منسق فقط إذا حالة = "جديدة" + يملك التذكرة
+  - زر "حذف التذكرة" يعيد التوجيه لـ `/tickets` بعد الحذف
+- **api.js:** أُضيف `ticketAPI.delete: (id) => api.delete('/tickets/${id}')`
+
+### 5. حذف التعليقات
+- **Backend — `DELETE /api/tickets/:ticketId/comments/:commentId`:**
+  - المالك (صاحب التعليق) أو المشرف فقط يستطيع الحذف
+- **Frontend — TicketDetailPage.jsx:**
+  - زر حذف صغير `.deleteCommentBtn` على كل تعليق — يظهر للمالك أو المشرف
+  - `handleDeleteComment(commentId)` تحدّث state محلياً بعد الحذف
+
+### 6. حذف المرفقات
+- **Backend — `DELETE /api/attachments/:id`:**
+  - إُصلح للتحقق من الملكية: `req.user.role !== 'admin' && attachment.user_id !== req.user.id` → 403
+- **Frontend — TicketDetailPage.jsx:**
+  - عرض المرفق تغيّر من زر واحد إلى `.attachmentRow`: تحميل + حذف منفصلَين
+  - `handleDeleteAttachment(id, fileName)` مع تأكيد + تحديث state محلي
+- **api.js:** أُضيف `attachmentAPI = { delete: (id) => api.delete('/attachments/${id}') }`
+
+### 7. استعادة المستخدمين المحذوفين (Soft Restore)
+- **Backend — `PUT /api/users/:id/restore`:**
+  - `UPDATE users SET is_active = true WHERE id = $1`
+  - admin فقط
+- **Frontend — SettingsPage.jsx:**
+  - المستخدمون المعطّلون يظهرون بـ `.inactiveRow` (opacity 0.6)
+  - بدلاً من أزرار التعديل/الحذف → زر "استعادة" واحد `.restoreButton` (أخضر)
+  - عنوان الجدول يعرض: "X نشط · Y معطل"
+- **api.js:** أُضيف `userAPI.restore: (id) => api.put('/users/${id}/restore')`
+
+### 8. إصلاح healthcheck في docker-compose.prod.yml
+- **المشكلة:** `curl -f` كان يفشل في `node:20-alpine` (curl غير مثبّت افتراضياً)
+- **الحل:** استبدل بـ `wget --spider -q` (wget متوفر في Alpine)
+- **ملاحظة:** frontend Dockerfile يبقى يستخدم `curl` لأن `nginx:alpine` لا يحتوي `wget`
+
+### الملفات المعدّلة
+- `frontend/src/pages/TicketsPage.jsx` — إعادة كتابة كاملة
+- `frontend/src/pages/TicketsPage.module.css` — إعادة كتابة كاملة
+- `frontend/src/pages/DashboardPage.jsx` — إعادة كتابة كاملة
+- `frontend/src/pages/DashboardPage.module.css` — إعادة كتابة كاملة
+- `frontend/src/pages/TicketDetailPage.jsx` — إضافة حذف تذكرة/تعليق/مرفق
+- `frontend/src/pages/TicketDetailPage.module.css` — styles الحذف
+- `frontend/src/pages/LogsPage.jsx` — إصلاح تنسيق التاريخ
+- `frontend/src/pages/SettingsPage.jsx` — استعادة المستخدمين
+- `frontend/src/pages/SettingsPage.module.css` — styles الاستعادة
+- `frontend/src/services/api.js` — ticketAPI.delete + attachmentAPI + userAPI.restore
+- `backend/src/routes/tickets.js` — DELETE ticket + DELETE comment
+- `backend/src/routes/attachments.js` — إصلاح فحص الملكية عند الحذف
+- `backend/src/routes/users.js` — PUT /:id/restore
+- `docker-compose.prod.yml` — curl → wget في healthcheck
+
+---
+
 ## 2026-04-21 — إصلاح إنشاء التذاكر وعرض البيانات
 
 ### المشاكل المكتشفة والمصلحة

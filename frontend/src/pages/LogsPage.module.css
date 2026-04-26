@@ -293,3 +293,31 @@
   .statsRow { grid-template-columns: 1fr; }
   .tabs { width: 100%; }
 }
+
+.migrationWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  color: #c2410c;
+  font-size: 13px;
+}
+.migrationWarning p {
+  margin: 4px 0;
+}
+.migrationWarning code {
+  display: block;
+  background: #1e293b;
+  color: #a5f3fc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-top: 6px;
+  word-break: break-all;
+  direction: ltr;
+  text-align: left;
+}

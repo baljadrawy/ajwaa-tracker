@@ -153,6 +153,14 @@ ajwaa-tracker/
 - **فلترة الخدمات** (مشرف + مدير): قطاع، إدارة، منسق، حالة — مع تفلتر تلقائي للإدارات بناءً على القطاع
 - **فلترة التذاكر** (جميع الأدوار): حالة، أولوية، تصنيف، أثر، مسؤولية، خدمة
 - **سجل الأخطاء** (مشرف فقط): يسجّل كل خطأ 500 تلقائياً في DB مع method/path/message/user/IP، صفحة `/logs` للعرض والمسح
+- **سجل الطلبات (Access Log)** — يسجّل كل طلب وارد في جدول `access_log` مع المدة والمستخدم والـ IP، مع تصدير CSV وفلترة متقدمة
+- **حذف التذاكر** — المشرف يحذف أي تذكرة، المنسق يحذف تذاكره بحالة "جديدة" فقط (مع حذف المرفقات والتعليقات والـ audit log)
+- **حذف التعليقات** — صاحب التعليق أو المشرف
+- **حذف المرفقات** — صاحب المرفق أو المشرف (يحذف الملف من القرص وقاعدة البيانات)
+- **استعادة المستخدمين** — المشرف يستعيد أي مستخدم محذوف (soft delete) من صفحة الإعدادات
+- **تحسين صفحة التذاكر** — عمود المنشئ (admin/manager)، عمود التاريخ، إجمالي التذاكر، زر مسح الفلاتر
+- **تحسين لوحة التحكم** — أشرطة بيانات مرئية، دائرة توزيع المسؤولية، جدول آخر 8 تذاكر قابل للنقر
+- **الأرقام اللاتينية** — جميع التواريخ تستخدم `ar-SA-u-nu-latn` لعرض أرقام لاتينية مع نص عربي
 
 ## أوامر التشغيل
 
@@ -244,15 +252,22 @@ chmod +x install-rhel.sh && sudo ./install-rhel.sh
 | `POST /api/attachments/upload/:ticketId` | رفع مرفق (10MB max) |
 | `GET /api/attachments/download/:id` | تحميل مرفق |
 | `GET /api/export/excel` | تصدير XLSX حقيقي (admin + manager فقط) |
-| `GET /api/logs` | قائمة الأخطاء (admin فقط) |
-| `GET /api/logs/:id` | تفاصيل خطأ |
-| `DELETE /api/logs` | مسح سجل الأخطاء (admin فقط) |
+| `DELETE /api/tickets/:id` | حذف تذكرة (admin أي تذكرة، coordinator تذاكره بحالة "جديدة") |
+| `DELETE /api/tickets/:id/comments/:commentId` | حذف تعليق (صاحبه أو admin) |
+| `DELETE /api/attachments/:id` | حذف مرفق + ملفه من القرص (صاحبه أو admin) |
+| `PUT /api/users/:id/restore` | استعادة مستخدم محذوف (admin فقط) |
+| `GET /api/logs/errors` | سجل الأخطاء مع فلترة (admin فقط) |
+| `GET /api/logs/access` | سجل الطلبات مع فلترة (admin فقط) |
+| `GET /api/logs/stats` | إحصائيات اليوم: طلبات، أخطاء، بطيئة، مستخدمين نشطين |
+| `GET /api/logs/export` | تصدير CSV للسجلات (admin فقط) |
+| `GET /api/logs` | قائمة الأخطاء — للتوافق مع الكود القديم |
+| `DELETE /api/logs` | مسح سجل الأخطاء أو الطلبات (admin فقط) |
 
 ## قاعدة البيانات
 
 **الاتصال:** `postgres://ajwaa:ajwaa_pass@postgres:5432/ajwaa_db`
 
-**الجداول:** users, sectors, departments, phases, services, tickets, comments, audit_log, attachments, error_log
+**الجداول:** users, sectors, departments, phases, services, tickets, comments, audit_log, attachments, error_log, access_log
 
 **المشرف الافتراضي:** `admin` / `admin123`
 
@@ -288,6 +303,11 @@ chmod +x install-rhel.sh && sudo ./install-rhel.sh
 - `GET /api/tickets/:id` يرجع `{ ticket, comments, auditLog, attachments }` — وليس كائناً مسطحاً
 - جميع endpoints التعديل في Backend تستخدم `PUT` وليس `PATCH`
 - `ticket_number` و `service_name` هما أسماء الأعمدة الصحيحة في response التذاكر (camelCase غير مدعوم)
+- التواريخ تستخدم `ar-SA-u-nu-latn` لعرض أرقام لاتينية (0-9) بدلاً من الهندية-العربية (٠-٩)
+- `healthcheck` في `docker-compose.prod.yml` يستخدم `wget` وليس `curl` (node:20-alpine لا يحتوي curl)
+- `attachmentAPI.delete(id)` في api.js — يحذف المرفق من الـ backend والقرص
+- `userAPI.restore(id)` في api.js — يستعيد مستخدم محذوف
+- المستخدمون المحذوفون (is_active=false) يظهرون في SettingsPage بشفافية مع زر "استعادة"
 
 ## البيانات الأولية (seed_data.sql)
 

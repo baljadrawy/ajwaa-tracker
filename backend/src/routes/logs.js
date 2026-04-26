@@ -51,6 +51,18 @@ router.get('/errors', authenticateToken, roleCheck('admin'), async (req, res) =>
 // GET /api/logs/access — سجل الطلبات (admin فقط)
 router.get('/access', authenticateToken, roleCheck('admin'), async (req, res) => {
   try {
+    // تحقق من وجود جدول access_log
+    const tableCheck = await pool.query(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='access_log') as exists`
+    );
+    if (!tableCheck.rows[0].exists) {
+      return res.json({
+        logs: [],
+        total: 0,
+        message: 'جدول access_log غير موجود — شغّل migrate_add_access_log.sql أولاً'
+      });
+    }
+
     const { limit = 100, offset = 0, user_id, status_code, date_from, date_to, method } = req.query;
 
     let queryStr = `
@@ -92,31 +104,42 @@ router.get('/access', authenticateToken, roleCheck('admin'), async (req, res) =>
 // GET /api/logs/stats — إحصائيات سريعة
 router.get('/stats', authenticateToken, roleCheck('admin'), async (req, res) => {
   try {
-    const [errors, requests, slowReqs, activeUsers] = await Promise.all([
-      // إجمالي الأخطاء اليوم
-      pool.query(`SELECT COUNT(*) FROM error_log WHERE created_at >= CURRENT_DATE`),
-      // إجمالي الطلبات اليوم
-      pool.query(`SELECT COUNT(*) FROM access_log WHERE created_at >= CURRENT_DATE`),
-      // طلبات بطيئة (أكثر من 2 ثانية) اليوم
-      pool.query(`SELECT COUNT(*) FROM access_log WHERE duration_ms > 2000 AND created_at >= CURRENT_DATE`),
-      // مستخدمون نشطون اليوم
-      pool.query(`SELECT COUNT(DISTINCT user_id) FROM access_log WHERE created_at >= CURRENT_DATE AND user_id IS NOT NULL`),
-    ]);
+    // تحقق من وجود جدول access_log أولاً
+    const tableCheck = await pool.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'access_log'
+      ) as exists`
+    );
+    const hasAccessLog = tableCheck.rows[0].exists;
 
-    // توزيع الأخطاء حسب الكود
+    const errors = await pool.query(
+      `SELECT COUNT(*) FROM error_log WHERE created_at >= CURRENT_DATE`
+    );
     const errorsByCode = await pool.query(
       `SELECT status_code, COUNT(*) as count FROM error_log
        WHERE created_at >= CURRENT_DATE GROUP BY status_code ORDER BY count DESC`
     );
 
-    // أكثر المستخدمين نشاطاً اليوم
-    const topUsers = await pool.query(
-      `SELECT u.full_name, u.username, COUNT(*) as requests
-       FROM access_log al
-       LEFT JOIN users u ON al.user_id = u.id
-       WHERE al.created_at >= CURRENT_DATE AND al.user_id IS NOT NULL
-       GROUP BY u.full_name, u.username ORDER BY requests DESC LIMIT 5`
-    );
+    let requests = { rows: [{ count: 0 }] };
+    let slowReqs = { rows: [{ count: 0 }] };
+    let activeUsers = { rows: [{ count: 0 }] };
+    let topUsers = { rows: [] };
+
+    if (hasAccessLog) {
+      [requests, slowReqs, activeUsers, topUsers] = await Promise.all([
+        pool.query(`SELECT COUNT(*) FROM access_log WHERE created_at >= CURRENT_DATE`),
+        pool.query(`SELECT COUNT(*) FROM access_log WHERE duration_ms > 2000 AND created_at >= CURRENT_DATE`),
+        pool.query(`SELECT COUNT(DISTINCT user_id) FROM access_log WHERE created_at >= CURRENT_DATE AND user_id IS NOT NULL`),
+        pool.query(
+          `SELECT u.full_name, u.username, COUNT(*) as requests
+           FROM access_log al
+           LEFT JOIN users u ON al.user_id = u.id
+           WHERE al.created_at >= CURRENT_DATE AND al.user_id IS NOT NULL
+           GROUP BY u.full_name, u.username ORDER BY requests DESC LIMIT 5`
+        ),
+      ]);
+    }
 
     res.json({
       today: {
@@ -127,6 +150,7 @@ router.get('/stats', authenticateToken, roleCheck('admin'), async (req, res) => 
       },
       errorsByCode: errorsByCode.rows,
       topUsers: topUsers.rows,
+      accessLogEnabled: hasAccessLog,
     });
   } catch (error) {
     console.error('Get logs stats error:', error.message);

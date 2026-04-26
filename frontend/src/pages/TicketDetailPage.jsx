@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
-import { ticketAPI, attachmentAPI } from '../services/api'
+import { ticketAPI, attachmentAPI, serviceAPI } from '../services/api'
 import api from '../services/api'
-import { ArrowRight, Send, FileText, MessageSquare, Download, Edit2, X, Check, Trash2 } from 'lucide-react'
+import { ArrowRight, Send, FileText, MessageSquare, Download, Edit2, X, Check, Trash2, Paperclip, Loader } from 'lucide-react'
 import toast from 'react-hot-toast'
 import styles from './TicketDetailPage.module.css'
 
@@ -38,9 +38,65 @@ export function TicketDetailPage() {
   const [newStatus, setNewStatus] = useState('')
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
+  // تعديل التذكرة
+  const [editModal, setEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({})
+  const [editLoading, setEditLoading] = useState(false)
+  const [services, setServices] = useState([])
+  // رفع مرفقات جديدة
+  const [newAttachments, setNewAttachments] = useState([])
+
   useEffect(() => {
     fetchTicket()
+    fetchServices()
   }, [id])
+
+  const fetchServices = async () => {
+    try {
+      const res = await serviceAPI.list()
+      setServices(res.data || [])
+    } catch {}
+  }
+
+  const openEditModal = () => {
+    setEditForm({
+      serviceId: ticket.service_id || '',
+      environment: ticket.environment || '',
+      description: ticket.description || '',
+      classification: ticket.classification || '',
+      impact: ticket.impact || '',
+      priority: ticket.priority || '',
+      responsibility: ticket.responsibility || '',
+      expectedResolutionDate: ticket.expected_resolution_date
+        ? ticket.expected_resolution_date.slice(0, 10) : '',
+    })
+    setNewAttachments([])
+    setEditModal(true)
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      setEditLoading(true)
+      await ticketAPI.update(id, {
+        ...editForm,
+        serviceId: editForm.serviceId || null,
+      })
+      // رفع مرفقات جديدة إذا وجدت
+      if (newAttachments.length > 0) {
+        for (const file of newAttachments) {
+          try { await ticketAPI.addAttachment(id, file) } catch {}
+        }
+      }
+      toast.success('تم تحديث التذكرة بنجاح')
+      setEditModal(false)
+      fetchTicket()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'فشل تحديث التذكرة')
+    } finally {
+      setEditLoading(false)
+    }
+  }
 
   const fetchTicket = async () => {
     try {
@@ -159,6 +215,9 @@ export function TicketDetailPage() {
   }
 
   const canEdit = user?.role === 'admin' || user?.role === 'coordinator'
+  // المنسق يعدّل تذاكره فقط (التي أنشأها)
+  const canEditTicket = user?.role === 'admin' ||
+    (user?.role === 'coordinator' && ticket?.created_by === user?.id)
 
   // المشرف يحذف أي تذكرة — المنسق يحذف فقط تذاكره بحالة "جديدة"
   const canDelete = user?.role === 'admin' ||
@@ -190,9 +249,15 @@ export function TicketDetailPage() {
             العودة
           </button>
           <div className={styles.pageHeaderActions}>
+            {canEditTicket && ticket.status !== 'مغلقة' && (
+              <button onClick={openEditModal} className={styles.editTicketBtn}>
+                <Edit2 size={16} />
+                تعديل التذكرة
+              </button>
+            )}
             {canEdit && ticket.status !== 'مغلقة' && (
               <button onClick={openStatusModal} className={styles.updateStatusBtn}>
-                <Edit2 size={16} />
+                <Check size={16} />
                 تحديث الحالة
               </button>
             )}
@@ -392,6 +457,112 @@ export function TicketDetailPage() {
 
           </div>
         </div>
+
+        {/* مودال تعديل التذكرة */}
+        {editModal && (
+          <div className={styles.modalOverlay} onClick={() => setEditModal(false)}>
+            <div className={styles.modal} style={{maxWidth: 680}} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3>تعديل التذكرة — {ticket.ticket_number}</h3>
+                <button onClick={() => setEditModal(false)} className={styles.modalClose}><X size={20} /></button>
+              </div>
+              <form onSubmit={handleEditSubmit}>
+                <div className={styles.modalBody}>
+                  <div className={styles.editGrid}>
+                    {user?.role === 'admin' && (
+                      <div className={styles.editGroup}>
+                        <label>الخدمة</label>
+                        <select value={editForm.serviceId} onChange={e => setEditForm(p => ({...p, serviceId: e.target.value}))} className={styles.editSelect}>
+                          <option value="">— عام —</option>
+                          {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    <div className={styles.editGroup}>
+                      <label>حالة البيئة *</label>
+                      <select value={editForm.environment} onChange={e => setEditForm(p => ({...p, environment: e.target.value}))} required className={styles.editSelect}>
+                        <option value="Operation Support">Operation Support</option>
+                        <option value="BA">BA</option>
+                      </select>
+                    </div>
+                    <div className={styles.editGroup}>
+                      <label>التصنيف *</label>
+                      <select value={editForm.classification} onChange={e => setEditForm(p => ({...p, classification: e.target.value}))} required className={styles.editSelect}>
+                        <option value="تشغيلي">تشغيلي</option>
+                        <option value="تحليلي">تحليلي</option>
+                        <option value="نقل البيانات">نقل البيانات</option>
+                      </select>
+                    </div>
+                    <div className={styles.editGroup}>
+                      <label>الأثر *</label>
+                      <select value={editForm.impact} onChange={e => setEditForm(p => ({...p, impact: e.target.value}))} required className={styles.editSelect}>
+                        <option value="عائق تشغيل">عائق تشغيل</option>
+                        <option value="غير عائق">غير عائق</option>
+                        <option value="تحسيني">تحسيني</option>
+                      </select>
+                    </div>
+                    <div className={styles.editGroup}>
+                      <label>الأولوية *</label>
+                      <select value={editForm.priority} onChange={e => setEditForm(p => ({...p, priority: e.target.value}))} required className={styles.editSelect}>
+                        <option value="حرجة">حرجة</option>
+                        <option value="عالية">عالية</option>
+                        <option value="متوسطة">متوسطة</option>
+                        <option value="منخفضة">منخفضة</option>
+                      </select>
+                    </div>
+                    <div className={styles.editGroup}>
+                      <label>المسؤولية *</label>
+                      <select value={editForm.responsibility} onChange={e => setEditForm(p => ({...p, responsibility: e.target.value}))} required className={styles.editSelect}>
+                        <option value="الهيئة">الهيئة</option>
+                        <option value="شركة علم">شركة علم</option>
+                      </select>
+                    </div>
+                    <div className={styles.editGroup}>
+                      <label>الموعد المتوقع للحل</label>
+                      <input type="date" value={editForm.expectedResolutionDate} onChange={e => setEditForm(p => ({...p, expectedResolutionDate: e.target.value}))} className={styles.editInput} />
+                    </div>
+                  </div>
+                  <div className={styles.editGroup} style={{marginTop: 12}}>
+                    <label>وصف الملاحظة *</label>
+                    <textarea value={editForm.description} onChange={e => setEditForm(p => ({...p, description: e.target.value}))} required rows={5} className={styles.editTextarea} />
+                  </div>
+                  {/* رفع مرفقات إضافية */}
+                  <div className={styles.editGroup} style={{marginTop: 12}}>
+                    <label>إضافة مرفقات</label>
+                    <label className={styles.attachUploadLabel}>
+                      <Paperclip size={15} /> اختر ملفات (الحد الأقصى 10MB لكل ملف)
+                      <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                        onChange={e => {
+                          const valid = Array.from(e.target.files).filter(f => f.size <= 10*1024*1024)
+                          setNewAttachments(p => [...p, ...valid])
+                          e.target.value = ''
+                        }}
+                        style={{display:'none'}}
+                      />
+                    </label>
+                    {newAttachments.length > 0 && (
+                      <div className={styles.editAttachList}>
+                        {newAttachments.map((f, i) => (
+                          <div key={i} className={styles.editAttachItem}>
+                            <Paperclip size={12} />
+                            <span>{f.name}</span>
+                            <button type="button" onClick={() => setNewAttachments(p => p.filter((_,j)=>j!==i))} className={styles.removeAttachBtn}><X size={12} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.modalFooter}>
+                  <button type="button" onClick={() => setEditModal(false)} className={styles.cancelBtn}>إلغاء</button>
+                  <button type="submit" disabled={editLoading} className={styles.confirmBtn}>
+                    {editLoading ? <><Loader size={14} /> جاري الحفظ...</> : 'حفظ التعديلات'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* مودال تحديث الحالة */}
         {statusModal && (

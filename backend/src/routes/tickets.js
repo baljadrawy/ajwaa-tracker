@@ -128,12 +128,28 @@ router.get('/', authenticateToken, async (req, res) => {
       params.push(endDate);
     }
 
+    // البحث النصي: رقم التذكرة أو الوصف
+    const { search } = req.query;
+    if (search) {
+      queryStr += ` AND (t.ticket_number ILIKE $${paramIndex} OR t.description ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    // إجمالي النتائج بدون limit
+    const countQuery = queryStr.replace(
+      /SELECT[\s\S]*?FROM tickets/,
+      'SELECT COUNT(*) as total FROM tickets'
+    );
+    const countResult = await pool.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].total);
+
     queryStr += ` ORDER BY t.updated_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
     params.push(parseInt(limit));
     params.push(parseInt(offset));
 
     const result = await pool.query(queryStr, params);
-    res.json(result.rows);
+    res.json({ tickets: result.rows, total });
   } catch (error) {
     console.error('Get tickets error:', error);
     logError({ req, statusCode: 500, error });
@@ -215,7 +231,6 @@ router.post(
   authenticateToken,
   roleCheck('admin', 'coordinator'),
   [
-    body('serviceId').notEmpty().withMessage('الخدمة مطلوبة'),
     body('environment').notEmpty().withMessage('حالة البيئة مطلوبة'),
     body('description').notEmpty().withMessage('وصف الملاحظة مطلوب'),
     body('classification').notEmpty().withMessage('التصنيف مطلوب'),
@@ -235,13 +250,13 @@ router.post(
         classification, impact, priority, responsibility
       } = req.body;
 
-      // ticket_number يتولد تلقائياً بالـ trigger
+      // serviceId اختياري — التذكرة العامة لا ترتبط بخدمة
       const result = await pool.query(
         `INSERT INTO tickets
          (service_id, environment, description, classification, impact, priority, status, responsibility, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING id, ticket_number, service_id, environment, description, classification, impact, priority, status, responsibility, observed_date, updated_at`,
-        [serviceId, environment, description, classification, impact, priority, 'جديدة', responsibility, req.user.id]
+        [serviceId || null, environment, description, classification, impact, priority, 'جديدة', responsibility, req.user.id]
       );
 
       res.status(201).json(result.rows[0]);
@@ -261,21 +276,40 @@ router.put(
     try {
       const { id } = req.params;
       const {
-        environment, description, classification, impact,
+        serviceId, environment, description, classification, impact,
         priority, status, responsibility,
         expectedResolutionDate, closureDate
       } = req.body;
 
-      const ticketResult = await pool.query('SELECT * FROM tickets WHERE id = $1', [id]);
+      const ticketResult = await pool.query(
+        `SELECT t.*, s.coordinator_id FROM tickets t
+         LEFT JOIN services s ON t.service_id = s.id
+         WHERE t.id = $1`, [id]
+      );
       if (ticketResult.rows.length === 0) {
         return res.status(404).json({ error: 'التذكرة غير موجودة' });
       }
 
       const ticket = ticketResult.rows[0];
+
+      // المنسق يعدّل تذاكره فقط (التي أنشأها أو تخص خدمته)
+      if (req.user.role === 'coordinator') {
+        const isOwner = ticket.created_by === req.user.id;
+        const isCoordinator = ticket.coordinator_id === req.user.id;
+        if (!isOwner && !isCoordinator) {
+          return res.status(403).json({ error: 'غير مصرح لك بتعديل هذه التذكرة' });
+        }
+      }
+
       const updates = [];
       const values = [];
       let paramIndex = 1;
 
+      // serviceId — المنسق لا يقدر يغير الخدمة إلا المشرف
+      if (serviceId !== undefined && req.user.role === 'admin') {
+        updates.push(`service_id = $${paramIndex++}`);
+        values.push(serviceId || null);
+      }
       if (environment) { updates.push(`environment = $${paramIndex++}`); values.push(environment); }
       if (description) { updates.push(`description = $${paramIndex++}`); values.push(description); }
       if (classification) { updates.push(`classification = $${paramIndex++}`); values.push(classification); }
@@ -283,7 +317,7 @@ router.put(
       if (priority) { updates.push(`priority = $${paramIndex++}`); values.push(priority); }
       if (responsibility) { updates.push(`responsibility = $${paramIndex++}`); values.push(responsibility); }
       if (expectedResolutionDate) { updates.push(`expected_resolution_date = $${paramIndex++}`); values.push(expectedResolutionDate); }
-      if (closureDate) { updates.push(`closed_date = $${paramIndex++}`); values.push(closureDate); }
+      if (closureDate !== undefined) { updates.push(`closed_date = $${paramIndex++}`); values.push(closureDate || null); }
 
       let statusChanged = false;
       if (status && status !== ticket.status) {

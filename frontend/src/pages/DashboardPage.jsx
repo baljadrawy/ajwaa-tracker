@@ -72,7 +72,9 @@ export function DashboardPage() {
         byResponsibility: responsibilityMap,
       })
 
-      setRecentTickets((ticketsRes.data || []).slice(0, 8))
+      const ticketData = ticketsRes.data
+      const ticketList = Array.isArray(ticketData) ? ticketData : (ticketData.tickets || [])
+      setRecentTickets(ticketList.slice(0, 8))
     } catch (error) {
       toast.error('فشل تحميل الإحصائيات')
       console.error('Failed to fetch stats:', error)
