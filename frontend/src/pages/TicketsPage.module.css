@@ -337,6 +337,13 @@
 .paginationButton:hover:not(:disabled) { opacity: 0.85; }
 .paginationButton:disabled { opacity: 0.4; cursor: not-allowed; }
 
+
 @media (max-width: 768px) {
   .header { flex-direction: column; }
-  .filtersSection { flex-directi
+  .filtersSection { flex-direction: column; }
+  .searchForm { min-width: 100%; }
+  .filters { width: 100%; }
+  .filterSelect { flex: 1; min-width: unset; }
+  .table { font-size: 0.78rem; }
+  .table th, .table td { padding: 8px; }
+}
