@@ -180,4 +180,19 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
     res.end();
 
   } catch (error) {
-    con
+    console.error('Export error:', error.message);
+    logError({ req, statusCode: 500, error });
+    res.status(500).json({ error: 'فشل التصدير' });
+  }
+});
+
+function formatDate(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  const day   = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year  = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+module.exports = router;

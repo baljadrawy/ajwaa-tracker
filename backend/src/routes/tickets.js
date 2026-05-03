@@ -454,4 +454,28 @@ router.delete('/:id', authenticateToken, roleCheck('admin', 'coordinator'), asyn
 
     const ticket = ticketResult.rows[0];
 
-    // المنسق: يحذف فقط إذا كانت التذكرة "جديدة" وأنشأها هو
+    // المنسق: يحذف فقط إذا كانت التذكرة "جديدة" وأنشأها هو أو تتبع خدمته
+    if (req.user.role === 'coordinator') {
+      if (ticket.status !== 'جديدة') {
+        return res.status(403).json({ error: 'لا يمكن حذف التذكرة بعد بدء المعالجة' });
+      }
+      if (ticket.created_by !== req.user.id && ticket.coordinator_id !== req.user.id) {
+        return res.status(403).json({ error: 'غير مصرح لك بحذف هذه التذكرة' });
+      }
+    }
+
+    // حذف المرفقات والتعليقات والـ audit log أولاً ثم التذكرة
+    await pool.query('DELETE FROM attachments WHERE ticket_id = $1', [id]);
+    await pool.query('DELETE FROM comments WHERE ticket_id = $1', [id]);
+    await pool.query('DELETE FROM audit_log WHERE ticket_id = $1', [id]);
+    await pool.query('DELETE FROM tickets WHERE id = $1', [id]);
+
+    res.json({ message: 'تم حذف التذكرة بنجاح' });
+  } catch (error) {
+    console.error('Delete ticket error:', error);
+    logError({ req, statusCode: 500, error });
+    res.status(500).json({ error: 'حدث خطأ في الخادم' });
+  }
+});
+
+module.exports = router;

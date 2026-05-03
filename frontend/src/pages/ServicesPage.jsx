@@ -570,4 +570,13 @@ export function ServicesPage() {
                 </div>
               </div>
               <div className={styles.modalActions}>
-                <button onClick={handleEd
+                <button onClick={handleEditSave} className={styles.submitButton}><Edit size={15} /> حفظ</button>
+                <button onClick={() => setEditModal(null)} className={styles.cancelButton}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  )
+}
