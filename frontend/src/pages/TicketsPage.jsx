@@ -34,6 +34,7 @@ export function TicketsPage() {
   const [filterClassification, setFilterClassification] = useState('')
   const [filterImpact, setFilterImpact] = useState('')
   const [filterResponsibility, setFilterResponsibility] = useState('')
+  const [filterCoordinator, setFilterCoordinator] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -42,7 +43,7 @@ export function TicketsPage() {
   useEffect(() => {
     fetchTickets()
     fetchServices()
-  }, [filterStatus, filterPriority, filterService, filterClassification, filterImpact, filterResponsibility, currentPage])
+  }, [filterStatus, filterPriority, filterService, filterClassification, filterImpact, filterResponsibility, filterCoordinator, currentPage])
 
   const fetchTickets = async () => {
     try {
@@ -57,6 +58,7 @@ export function TicketsPage() {
       if (filterClassification) params.classification = filterClassification
       if (filterImpact)         params.impact = filterImpact
       if (filterResponsibility) params.responsibility = filterResponsibility
+      if (filterCoordinator)    params.coordinator = filterCoordinator
       if (searchTerm)           params.search = searchTerm
 
       const response = await ticketAPI.list(params)
@@ -100,6 +102,7 @@ export function TicketsPage() {
       if (filterClassification) params.append('classification', filterClassification)
       if (filterImpact)         params.append('impact', filterImpact)
       if (filterResponsibility) params.append('responsibility', filterResponsibility)
+      if (filterCoordinator)    params.append('coordinator', filterCoordinator)
 
       const response = await api.get(`/export/excel?${params.toString()}`, {
         responseType: 'blob',
@@ -126,20 +129,33 @@ export function TicketsPage() {
     setFilterClassification('')
     setFilterImpact('')
     setFilterResponsibility('')
+    setFilterCoordinator('')
     setSearchTerm('')
     setCurrentPage(1)
   }
 
   const hasActiveFilters = filterStatus || filterPriority || filterService ||
-    filterClassification || filterImpact || filterResponsibility || searchTerm
+    filterClassification || filterImpact || filterResponsibility || filterCoordinator || searchTerm
+
+  // استخراج المنسقين الفريدين من قائمة الخدمات
+  const coordinators = [...new Map(
+    services
+      .filter(s => s.coordinator_id && s.coordinator_name)
+      .map(s => [s.coordinator_id, { id: s.coordinator_id, name: s.coordinator_name }])
+  ).values()]
 
   // pagination server-side — tickets هي الصفحة الحالية فقط
   const paginatedTickets = tickets
   const totalPages = Math.ceil(totalCount / itemsPerPage)
 
-  const fmt = (d) => d ? new Date(d).toLocaleDateString('ar-SA-u-nu-latn', {
-    year: 'numeric', month: '2-digit', day: '2-digit'
-  }) : '-'
+  const fmt = (d) => {
+    if (!d) return '-'
+    const dt = new Date(d)
+    const day   = String(dt.getDate()).padStart(2, '0')
+    const month = String(dt.getMonth() + 1).padStart(2, '0')
+    const year  = dt.getFullYear()
+    return `${day}/${month}/${year}`
+  }
 
   const isAdmin = user?.role === 'admin'
   const isManager = user?.role === 'manager'
@@ -227,6 +243,15 @@ export function TicketsPage() {
               ))}
             </select>
 
+            {(isAdmin || isManager) && coordinators.length > 0 && (
+              <select value={filterCoordinator} onChange={(e) => { setFilterCoordinator(e.target.value); setCurrentPage(1) }} className={styles.filterSelect}>
+                <option value="">جميع المنسقين</option>
+                {coordinators.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
+
             {hasActiveFilters && (
               <button onClick={resetFilters} className={styles.resetBtn}>
                 <X size={14} /> مسح الفلاتر
@@ -310,36 +335,4 @@ export function TicketsPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className={styles.paginationButton}
-                >
-                  <ChevronRight size={16} />
-                </button>
-                <span className={styles.pageInfo}>
-                  صفحة {currentPage} من {totalPages} ({totalCount} إجمالي)
-                </span>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className={styles.paginationButton}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={styles.emptyState}>
-            <Filter size={48} />
-            <h3>لا توجد تذاكر</h3>
-            <p>لم يتم العثور على أي تذاكر تطابق معايير البحث</p>
-            {hasActiveFilters && (
-              <button onClick={resetFilters} className={styles.resetBtn} style={{marginTop: 8}}>
-                <X size={14} /> مسح الفلاتر
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </Layout>
-  )
-}
+                  c

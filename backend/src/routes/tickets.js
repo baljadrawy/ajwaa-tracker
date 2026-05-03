@@ -60,6 +60,7 @@ router.get('/', authenticateToken, async (req, res) => {
       classification,
       impact,
       responsibility,
+      coordinator,
       startDate,
       endDate,
       limit = 50,
@@ -116,6 +117,12 @@ router.get('/', authenticateToken, async (req, res) => {
     if (responsibility) {
       queryStr += ` AND t.responsibility = $${paramIndex++}`;
       params.push(responsibility);
+    }
+
+    // فلتر المنسق — للمشرف والمدير فقط (المنسق مقيّد بخدماته تلقائياً)
+    if (coordinator && req.user.role !== 'coordinator') {
+      queryStr += ` AND s.coordinator_id = $${paramIndex++}`;
+      params.push(coordinator);
     }
 
     if (startDate) {
@@ -448,14 +455,4 @@ router.delete('/:id', authenticateToken, roleCheck('admin', 'coordinator'), asyn
     await pool.query('DELETE FROM attachments WHERE ticket_id = $1', [id]);
     await pool.query('DELETE FROM comments WHERE ticket_id = $1', [id]);
     await pool.query('DELETE FROM audit_log WHERE ticket_id = $1', [id]);
-    await pool.query('DELETE FROM tickets WHERE id = $1', [id]);
-
-    res.json({ message: 'تم حذف التذكرة بنجاح' });
-  } catch (error) {
-    console.error('Delete ticket error:', error);
-    logError({ req, statusCode: 500, error });
-    res.status(500).json({ error: 'حدث خطأ في الخادم' });
-  }
-});
-
-module.exports = router;
+    await pool.query('DELETE FROM tickets WHERE id = 

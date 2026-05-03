@@ -14,6 +14,7 @@ const STATUS_LABELS = {
   'قيد التطوير': 'قيد التطوير',
   'UAT': 'UAT',
   'مطلقة': 'مطلقة',
+  'مفعلة': 'مفعلة',
 }
 
 const EMPTY_FORM = {
@@ -333,9 +334,10 @@ export function ServicesPage() {
                   className={styles.select}
                 >
                   <option value="">-- اختر الحالة --</option>
-                  <option value="مطلقة">مطلقة</option>
                   <option value="قيد التطوير">قيد التطوير</option>
                   <option value="UAT">UAT</option>
+                  <option value="مطلقة">مطلقة</option>
+                  <option value="مفعلة">مفعلة</option>
                 </select>
               </div>
 
@@ -405,9 +407,10 @@ export function ServicesPage() {
               className={styles.filterSelect}
             >
               <option value="">جميع الحالات</option>
-              <option value="مطلقة">مطلقة</option>
               <option value="قيد التطوير">قيد التطوير</option>
               <option value="UAT">UAT</option>
+              <option value="مطلقة">مطلقة</option>
+              <option value="مفعلة">مفعلة</option>
             </select>
 
             {(filterSector || filterDept || filterCoordinator || filterStatus) && (
@@ -506,9 +509,10 @@ export function ServicesPage() {
                 <label>الحالة</label>
                 <select value={statusValue} onChange={e => setStatusValue(e.target.value)} className={styles.select}>
                   <option value="">-- اختر الحالة --</option>
-                  <option value="مطلقة">مطلقة</option>
                   <option value="قيد التطوير">قيد التطوير</option>
                   <option value="UAT">UAT</option>
+                  <option value="مطلقة">مطلقة</option>
+                  <option value="مفعلة">مفعلة</option>
                 </select>
               </div>
               <div className={styles.modalActions}>
@@ -558,21 +562,12 @@ export function ServicesPage() {
                   <label>الحالة</label>
                   <select name="status" value={editForm.status} onChange={handleEditChange} className={styles.select}>
                     <option value="">-- اختر الحالة --</option>
-                    <option value="مطلقة">مطلقة</option>
                     <option value="قيد التطوير">قيد التطوير</option>
                     <option value="UAT">UAT</option>
+                    <option value="مطلقة">مطلقة</option>
+                    <option value="مفعلة">مفعلة</option>
                   </select>
                 </div>
               </div>
               <div className={styles.modalActions}>
-                <button onClick={handleEditSave} className={styles.submitButton}><Edit size={15} /> حفظ</button>
-                <button onClick={() => setEditModal(null)} className={styles.cancelButton}>إلغاء</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </Layout>
-  )
-}
-
+                <button onClick={handleEd

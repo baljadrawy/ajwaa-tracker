@@ -43,7 +43,7 @@ CREATE TYPE priority_type AS ENUM ('حرجة', 'عالية', 'متوسطة', 'م
 
 CREATE TYPE ticket_status_type AS ENUM ('جديدة', 'تحت الإجراء', 'مغلقة');
 
-CREATE TYPE service_status_type AS ENUM ('قيد التطوير', 'UAT', 'مطلقة');
+CREATE TYPE service_status_type AS ENUM ('قيد التطوير', 'UAT', 'مطلقة', 'مفعلة');
 
 -- 1. Users Table
 CREATE TABLE users (
@@ -296,4 +296,4 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ajwaa;
 -- Set default privileges for future objects
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ajwaa;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO ajwaa;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO ajwaa;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTI
