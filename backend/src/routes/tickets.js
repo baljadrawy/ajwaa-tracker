@@ -333,6 +333,17 @@ router.put(
         updates.push(`status = $${paramIndex++}`);
         values.push(status);
         statusChanged = true;
+
+        // عند الإغلاق: اضبط closed_date تلقائياً إذا لم يُرسل صراحةً
+        if (status === 'مغلقة' && closureDate === undefined) {
+          updates.push(`closed_date = $${paramIndex++}`);
+          values.push(new Date().toISOString().slice(0, 10));
+        }
+        // عند إعادة الفتح: امسح closed_date تلقائياً
+        if (status !== 'مغلقة' && ticket.status === 'مغلقة' && closureDate === undefined) {
+          updates.push(`closed_date = $${paramIndex++}`);
+          values.push(null);
+        }
       }
 
       if (updates.length === 0) {
@@ -443,15 +454,4 @@ router.delete('/:id', authenticateToken, roleCheck('admin', 'coordinator'), asyn
 
     const ticket = ticketResult.rows[0];
 
-    // المنسق: يحذف فقط إذا كانت التذكرة "جديدة" وأنشأها هو أو تتبع خدمته
-    if (req.user.role === 'coordinator') {
-      if (ticket.status !== 'جديدة') {
-        return res.status(403).json({ error: 'لا يمكن حذف التذكرة بعد بدء المعالجة' });
-      }
-      if (ticket.created_by !== req.user.id && ticket.coordinator_id !== req.user.id) {
-        return res.status(403).json({ error: 'غير مصرح لك بحذف هذه التذكرة' });
-      }
-    }
-
-    // حذف المرفقات والتعليقات والـ audit log أولاً ثم التذكرة
-    await pool.query('DELETE FROM atta
+    // المنسق: يحذف فقط إذا كانت التذكرة "جديدة" وأنشأها هو
