@@ -255,6 +255,17 @@
   white-space: nowrap;
 }
 
+.generalBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
 .description {
   color: #6b7280;
   font-size: 0.82rem;
@@ -328,10 +339,4 @@
 
 @media (max-width: 768px) {
   .header { flex-direction: column; }
-  .filtersSection { flex-direction: column; }
-  .searchForm { min-width: 100%; }
-  .filters { width: 100%; }
-  .filterSelect { flex: 1; min-width: unset; }
-  .table { font-size: 0.78rem; }
-  .table th, .table td { padding: 8px; }
-}
+  .filtersSection { flex-directi

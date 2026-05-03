@@ -295,7 +295,7 @@ export function TicketsPage() {
                     onClick={() => navigate(`/tickets/${ticket.id}`)}
                   >
                     <td className={styles.ticketNumber}>{ticket.ticket_number}</td>
-                    <td className={styles.serviceCell}>{ticket.service_name || '-'}</td>
+                    <td className={styles.serviceCell}>{ticket.service_name || <span className={styles.generalBadge}>عامة</span>}</td>
                     <td className={styles.description}>
                       {ticket.description?.length > 55
                         ? ticket.description.substring(0, 55) + '…'
@@ -334,5 +334,4 @@ export function TicketsPage() {
               <div className={styles.pagination}>
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  c
+                

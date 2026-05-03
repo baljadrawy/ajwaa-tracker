@@ -12,7 +12,7 @@ router.get('/stats/dashboard', authenticateToken, async (req, res) => {
     // المنسق يرى إحصائيات خدماته فقط
     const isCoordinator = req.user.role === 'coordinator';
     const whereClause = isCoordinator
-      ? `WHERE t.service_id IN (SELECT id FROM services WHERE coordinator_id = $1)`
+      ? `WHERE (t.service_id IN (SELECT id FROM services WHERE coordinator_id = $1) OR (t.service_id IS NULL AND t.created_by = $1))`
       : `WHERE 1=1`;
     const params = isCoordinator ? [req.user.id] : [];
 
@@ -85,8 +85,10 @@ router.get('/', authenticateToken, async (req, res) => {
     let paramIndex = 1;
 
     if (req.user.role === 'coordinator') {
-      queryStr += ` AND s.coordinator_id = $${paramIndex++}`;
+      // تذاكر خدماته + تذاكره العامة (بدون خدمة) التي أنشأها هو
+      queryStr += ` AND (s.coordinator_id = $${paramIndex} OR (t.service_id IS NULL AND t.created_by = $${paramIndex}))`;
       params.push(req.user.id);
+      paramIndex++;
     }
 
     if (service) {
@@ -452,7 +454,4 @@ router.delete('/:id', authenticateToken, roleCheck('admin', 'coordinator'), asyn
     }
 
     // حذف المرفقات والتعليقات والـ audit log أولاً ثم التذكرة
-    await pool.query('DELETE FROM attachments WHERE ticket_id = $1', [id]);
-    await pool.query('DELETE FROM comments WHERE ticket_id = $1', [id]);
-    await pool.query('DELETE FROM audit_log WHERE ticket_id = $1', [id]);
-    await pool.query('DELETE FROM tickets WHERE id = 
+    await pool.query('DELETE FROM atta
