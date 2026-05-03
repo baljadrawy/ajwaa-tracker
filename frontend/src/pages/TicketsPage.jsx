@@ -62,7 +62,6 @@ export function TicketsPage() {
       if (searchTerm)           params.search = searchTerm
 
       const response = await ticketAPI.list(params)
-      // API يرجع { tickets: [...], total: N }
       const data = response.data
       const ticketList = Array.isArray(data) ? data : (data.tickets || [])
       const total = data.total ?? ticketList.length
@@ -88,8 +87,6 @@ export function TicketsPage() {
   const handleSearch = (e) => {
     e.preventDefault()
     setCurrentPage(1)
-    // تغيير currentPage إلى 1 سيطلق useEffect لإعادة الجلب
-    // لكن إذا كانت الصفحة بالفعل 1 نطلب يدوياً
     if (currentPage === 1) fetchTickets()
   }
 
@@ -137,14 +134,12 @@ export function TicketsPage() {
   const hasActiveFilters = filterStatus || filterPriority || filterService ||
     filterClassification || filterImpact || filterResponsibility || filterCoordinator || searchTerm
 
-  // استخراج المنسقين الفريدين من قائمة الخدمات
   const coordinators = [...new Map(
     services
       .filter(s => s.coordinator_id && s.coordinator_name)
       .map(s => [s.coordinator_id, { id: s.coordinator_id, name: s.coordinator_name }])
   ).values()]
 
-  // pagination server-side — tickets هي الصفحة الحالية فقط
   const paginatedTickets = tickets
   const totalPages = Math.ceil(totalCount / itemsPerPage)
 
@@ -164,7 +159,6 @@ export function TicketsPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        {/* الرأس */}
         <div className={styles.header}>
           <div className={styles.titleSection}>
             <h1 className={styles.title}>التذاكر</h1>
@@ -186,7 +180,6 @@ export function TicketsPage() {
           </div>
         </div>
 
-        {/* شريط الفلاتر */}
         <div className={styles.filtersSection}>
           <form onSubmit={handleSearch} className={styles.searchForm}>
             <div className={styles.searchInput}>
@@ -260,14 +253,12 @@ export function TicketsPage() {
             )}
           </div>
 
-          {/* شريط المعلومات */}
           <div className={styles.infoBar}>
             <span className={styles.totalBadge}>{totalCount} تذكرة</span>
             {hasActiveFilters && <span className={styles.filterNote}>نتائج مفلترة</span>}
           </div>
         </div>
 
-        {/* المحتوى */}
         {loading ? (
           <div className={styles.loadingContainer}>
             <div className={styles.spinner}></div>
@@ -296,7 +287,9 @@ export function TicketsPage() {
                     onClick={() => navigate(`/tickets/${ticket.id}`)}
                   >
                     <td className={styles.ticketNumber}>{ticket.ticket_number}</td>
-                    <td className={styles.serviceCell}>{ticket.service_name || <span className={styles.generalBadge}>عامة</span>}</td>
+                    <td className={styles.serviceCell}>
+                      {ticket.service_name || <span className={styles.generalBadge}>عامة</span>}
+                    </td>
                     <td className={styles.description}>
                       {ticket.description?.length > 55
                         ? ticket.description.substring(0, 55) + '…'
@@ -334,4 +327,38 @@ export function TicketsPage() {
             {totalPages > 1 && (
               <div className={styles.pagination}>
                 <button
-                  on
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={styles.paginationButton}
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <span className={styles.pageInfo}>
+                  صفحة {currentPage} من {totalPages} ({totalCount} إجمالي)
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className={styles.paginationButton}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            <Filter size={48} />
+            <h3>لا توجد تذاكر</h3>
+            <p>لم يتم العثور على أي تذاكر تطابق معايير البحث</p>
+            {hasActiveFilters && (
+              <button onClick={resetFilters} className={styles.resetBtn} style={{marginTop: 8}}>
+                <X size={14} /> مسح الفلاتر
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </Layout>
+  )
+}
