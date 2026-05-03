@@ -26,9 +26,10 @@ const COLORS = {
   },
 };
 
-router.get('/excel', authenticateToken, roleCheck('admin', 'manager'), async (req, res) => {
+router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinator'), async (req, res) => {
   try {
     const { service, status, priority, classification, impact, responsibility, startDate, endDate } = req.query;
+    const isCoordinator = req.user.role === 'coordinator';
 
     let queryStr = `
       SELECT
@@ -45,6 +46,13 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager'), async (re
 
     const params = [];
     let idx = 1;
+
+    // المنسق يصدّر تذاكر خدماته + تذاكره العامة فقط
+    if (isCoordinator) {
+      queryStr += ` AND (s.coordinator_id = $${idx} OR (t.service_id IS NULL AND t.created_by = $${idx}))`;
+      params.push(req.user.id);
+      idx++;
+    }
 
     if (service)         { queryStr += ` AND t.service_id = $${idx++}`;       params.push(service); }
     if (status)          { queryStr += ` AND t.status = $${idx++}`;            params.push(status); }
@@ -112,7 +120,7 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager'), async (re
     tickets.forEach((t, i) => {
       const row = sheet.addRow([
         t.ticket_number,
-        t.service_name || '',
+        t.service_name || 'عامة',
         t.environment || '',
         t.description || '',
         t.classification || '',
@@ -172,17 +180,4 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager'), async (re
     res.end();
 
   } catch (error) {
-    console.error('Export error:', error.message);
-    logError({ req, statusCode: 500, error });
-    res.status(500).json({ error: 'فشل التصدير' });
-  }
-});
-
-function formatDate(date) {
-  if (!date) return '';
-  return new Date(date).toLocaleDateString('ar-SA', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-  });
-}
-
-module.exports = router;
+    con

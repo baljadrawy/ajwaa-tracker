@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-05-03 — تصدير Excel للمنسق + إصلاح الملاحظات العامة + إضافة حالة "مفعلة" + فلتر المنسق + إصلاح التاريخ
+
+### 1. تفعيل تصدير Excel للمنسق
+
+- **Backend — `export.js`:**
+  - `roleCheck` أصبح يقبل `'coordinator'` إضافةً للـ admin و manager
+  - المنسق يصدّر تذاكر خدماته + تذاكره العامة فقط (نفس منطق فلتر القائمة)
+  - إصلاح `formatDate` → تنسيق يدوي `DD/MM/YYYY` بأرقام لاتينية (منسجم مع الواجهة)
+  - الخدمة الفارغة تظهر "عامة" في ملف Excel بدل فراغ
+- **Frontend — `TicketsPage.jsx`:**
+  - أُضيف `isCoordinator` variable
+  - زر "تصدير Excel" يظهر للمشرف والمدير **والمنسق**
+
+### الملفات المعدّلة
+- `backend/src/routes/export.js`
+- `frontend/src/pages/TicketsPage.jsx`
+
+---
+
 ## 2026-05-03 — إصلاح الملاحظات العامة + إضافة حالة "مفعلة" + فلتر المنسق + إصلاح التاريخ
 
 ### 1. إصلاح الملاحظات العامة (بدون خدمة)
@@ -465,24 +484,4 @@ docker compose exec -T postgres psql -U ajwaa -d ajwaa_db < db/migrate_add_mufaa
 
 ### التعديلات
 - **تصحيح CORS** في `backend/src/app.js`: تغيير من origin ثابت إلى regex يقبل أي IP محلي (192.168.x.x, 10.x.x.x, 172.16-31.x.x) — ضروري لأن الرازبري باي يظهر بـ IP شبكة لا localhost
-- **إضافة سكريبت التثبيت** `install-rpi.sh`: يتحقق من Docker، المنافذ، ينشئ المجلدات، يبني الحاويات، ويطبع رابط الوصول مع الـ IP تلقائياً
-
-### ملاحظة التوافق مع ARM
-- جميع صور Docker (postgres:16-alpine, node:20-alpine, nginx:alpine) تدعم ARM64 بشكل كامل — لا تعديل مطلوب
-
----
-
-## 2026-04-13 — بناء هيكل المشروع الكامل + دليل التثبيت
-
-### ما تم إنجازه
-
-#### قاعدة البيانات (`db/init.sql`)
-- 9 جداول: users, sectors, departments, phases, services, tickets, comments, audit_log, attachments
-- أنواع ENUM عربية لجميع الحقول (التصنيف، الأثر، الأولوية، الحالة، المسؤولية)
-- Trigger تلقائي لتوليد رقم التذكرة (T-0001, T-0002, ...)
-- Trigger لتحديث updated_at تلقائياً
-- فهارس على: tickets(status), tickets(service_id), tickets(priority), services(coordinator_id)
-- مستخدم افتراضي: admin / admin123 (مشرف)
-
-#### Backend (`backend/`)
-- Express 4 + Node.js 20 Al
+- **إضافة سكريبت التثبيت** `install-rpi.sh`: يتحقق من Docker، المنافذ، ينشئ المجلدات، يبني الحاويات، ويطبع رابط الوصول مع الـ 

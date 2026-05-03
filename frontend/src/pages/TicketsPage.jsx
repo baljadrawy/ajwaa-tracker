@@ -159,6 +159,7 @@ export function TicketsPage() {
 
   const isAdmin = user?.role === 'admin'
   const isManager = user?.role === 'manager'
+  const isCoordinator = user?.role === 'coordinator'
 
   return (
     <Layout>
@@ -170,7 +171,7 @@ export function TicketsPage() {
             <p className={styles.subtitle}>إدارة وتتبع جميع ملاحظات النظام</p>
           </div>
           <div className={styles.headerActions}>
-            {(isAdmin || isManager) && (
+            {(isAdmin || isManager || isCoordinator) && (
               <button onClick={handleExport} className={styles.exportButton}>
                 <Download size={16} />
                 تصدير Excel
@@ -333,5 +334,4 @@ export function TicketsPage() {
             {totalPages > 1 && (
               <div className={styles.pagination}>
                 <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                
+                  on
