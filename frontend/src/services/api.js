@@ -26,7 +26,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - امسح التوكن وارجع لصفحة الدخول
       delete axios.defaults.headers.common['Authorization']
       localStorage.removeItem('ajwaa_token')
       localStorage.removeItem('ajwaa_user')
@@ -105,6 +104,11 @@ export const phaseAPI = {
 export const dashboardAPI = {
   stats: () => api.get('/tickets/stats/dashboard'),
   chartData: () => api.get('/tickets/stats/dashboard'),
+}
+
+// Insights APIs
+export const insightsAPI = {
+  coordinators: () => api.get('/tickets/stats/insights'),
 }
 
 // Logs APIs

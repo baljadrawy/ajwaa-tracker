@@ -6,6 +6,70 @@ const { logError } = require('../middleware/errorLogger');
 
 const router = express.Router();
 
+// ⚠️ مهم: /stats/insights و /stats/dashboard يجب أن يكونا قبل /:id
+router.get('/stats/insights', authenticateToken, roleCheck('admin', 'manager'), async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        u.id                                                      AS coordinator_id,
+        u.full_name                                               AS coordinator_name,
+        COUNT(t.id)                                               AS total,
+        COUNT(t.id) FILTER (WHERE t.status = 'جديدة')            AS new_count,
+        COUNT(t.id) FILTER (WHERE t.status = 'تحت الإجراء')      AS in_progress,
+        COUNT(t.id) FILTER (WHERE t.status = 'مغلقة')            AS closed,
+        COUNT(t.id) FILTER (WHERE t.priority = 'حرجة')           AS critical,
+        COUNT(t.id) FILTER (WHERE t.priority = 'عالية')          AS high,
+        COUNT(t.id) FILTER (WHERE t.priority = 'متوسطة')         AS medium,
+        COUNT(t.id) FILTER (WHERE t.priority = 'منخفضة')         AS low,
+        COUNT(t.id) FILTER (WHERE t.impact = 'عائق تشغيل')       AS blocker,
+        COUNT(t.id) FILTER (WHERE t.impact = 'غير عائق')         AS non_blocker,
+        COUNT(t.id) FILTER (WHERE t.impact = 'تحسيني')           AS enhancement,
+        COUNT(t.id) FILTER (WHERE t.responsibility = 'الهيئة')   AS resp_gaca,
+        COUNT(t.id) FILTER (WHERE t.responsibility = 'شركة علم') AS resp_elm
+      FROM users u
+      LEFT JOIN (
+        SELECT t2.*, s2.coordinator_id AS svc_coordinator
+        FROM tickets t2
+        LEFT JOIN services s2 ON s2.id = t2.service_id
+      ) t ON (t.svc_coordinator = u.id OR (t.service_id IS NULL AND t.created_by = u.id))
+      WHERE u.role = 'coordinator' AND u.is_active = true
+      GROUP BY u.id, u.full_name
+      ORDER BY total DESC
+    `);
+
+    const coordinators = result.rows.map(r => ({
+      coordinator_id:   r.coordinator_id,
+      coordinator_name: r.coordinator_name,
+      total:       parseInt(r.total),
+      new_count:   parseInt(r.new_count),
+      in_progress: parseInt(r.in_progress),
+      closed:      parseInt(r.closed),
+      closure_rate: r.total > 0 ? Math.round((parseInt(r.closed) / parseInt(r.total)) * 100) : 0,
+      priority: {
+        critical: parseInt(r.critical),
+        high:     parseInt(r.high),
+        medium:   parseInt(r.medium),
+        low:      parseInt(r.low),
+      },
+      impact: {
+        blocker:     parseInt(r.blocker),
+        non_blocker: parseInt(r.non_blocker),
+        enhancement: parseInt(r.enhancement),
+      },
+      responsibility: {
+        gaca: parseInt(r.resp_gaca),
+        elm:  parseInt(r.resp_elm),
+      },
+    }));
+
+    res.json({ coordinators });
+  } catch (error) {
+    console.error('Insights error:', error);
+    logError({ req, statusCode: 500, error });
+    res.status(500).json({ error: 'حدث خطأ في الخادم' });
+  }
+});
+
 // ⚠️ مهم: /stats/dashboard يجب أن يكون قبل /:id
 router.get('/stats/dashboard', authenticateToken, async (req, res) => {
   try {

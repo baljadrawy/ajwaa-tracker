@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Briefcase,
   AlertTriangle,
+  BarChart2,
 } from 'lucide-react'
 import styles from './Layout.module.css'
 
@@ -44,6 +45,12 @@ export function Layout({ children }) {
       href: '/services',
       icon: Briefcase,
       roles: ['admin', 'coordinator'],
+    },
+    {
+      label: 'مؤشرات الأداء',
+      href: '/insights',
+      icon: BarChart2,
+      roles: ['admin', 'manager'],
     },
     {
       label: 'الإعدادات',

@@ -10,6 +10,7 @@ import { TicketDetailPage } from './pages/TicketDetailPage'
 import { ServicesPage } from './pages/ServicesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { LogsPage } from './pages/LogsPage'
+import { InsightsPage } from './pages/InsightsPage'
 
 export default function App() {
   const { isAuthenticated } = useAuth()
@@ -82,6 +83,15 @@ export default function App() {
         element={
           <ProtectedRoute requiredRoles={['admin']}>
             <LogsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/insights"
+        element={
+          <ProtectedRoute requiredRoles={['admin', 'manager']}>
+            <InsightsPage />
           </ProtectedRoute>
         }
       />
