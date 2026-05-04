@@ -11,6 +11,7 @@ import { ServicesPage } from './pages/ServicesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { LogsPage } from './pages/LogsPage'
 import { InsightsPage } from './pages/InsightsPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
 
 export default function App() {
   const { isAuthenticated } = useAuth()
@@ -92,6 +93,15 @@ export default function App() {
         element={
           <ProtectedRoute requiredRoles={['admin', 'manager']}>
             <InsightsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute requiredRoles={['admin', 'manager']}>
+            <AnalyticsPage />
           </ProtectedRoute>
         }
       />

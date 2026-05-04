@@ -1,0 +1,317 @@
+.page {
+  padding: 1.5rem;
+  direction: rtl;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.header h1 {
+  font-family: 'Co Headline', sans-serif;
+  font-size: 1.5rem;
+  color: var(--primary);
+  margin: 0 0 0.25rem;
+}
+
+.header p {
+  color: #666;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Summary Cards */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summaryCard {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 1px 4px rgba(20, 0, 70, 0.06);
+}
+
+.summaryCard .label {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+  font-family: 'Co Text', sans-serif;
+}
+
+.summaryCard .value {
+  font-size: 1.75rem;
+  font-family: 'Co Headline', sans-serif;
+  font-weight: bold;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.summaryCard.cardNew .value { color: #2563eb; }
+.summaryCard.cardInProgress .value { color: #d97706; }
+.summaryCard.cardClosed .value { color: #16a34a; }
+.summaryCard.cardCritical .value { color: #dc2626; }
+.summaryCard.cardRate .value { color: #7c3aed; }
+
+/* Charts Grid */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.chartCard {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 1px 4px rgba(20, 0, 70, 0.06);
+}
+
+.chartCard h2 {
+  font-family: 'Co Headline', sans-serif;
+  font-size: 1rem;
+  color: var(--primary);
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--accent-start);
+  display: inline-block;
+}
+
+/* Trend Chart */
+.trendChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  height: 160px;
+  padding-top: 1rem;
+}
+
+.trendMonth {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.trendBars {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  width: 100%;
+  justify-content: center;
+}
+
+.trendBar {
+  width: 10px;
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  transition: opacity 0.2s;
+}
+
+.trendBar:hover { opacity: 0.8; }
+
+.barTotal { background: var(--primary-mid); }
+.barClosed { background: var(--accent-start); }
+.barCritical { background: #ef4444; }
+
+.trendMonthLabel {
+  font-size: 0.65rem;
+  color: #888;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.trendLegend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  justify-content: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Services Charts */
+.servicesChart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.serviceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.serviceLabel {
+  font-size: 0.75rem;
+  color: #444;
+  width: 140px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.serviceBarWrap {
+  flex: 1;
+  background: #f0f2f8;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.serviceBar {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent-end), var(--primary-mid));
+  transition: width 0.4s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-left: 6px;
+}
+
+.serviceCount {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: white;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+/* Closure Rate Table */
+.rateTable {
+  width: 100%;
+}
+
+.rateTable .fullWidth {
+  grid-column: 1 / -1;
+}
+
+.rateTableHeader {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f4f6fb;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.rateTableRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f0f2f8;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.rateTableRow:last-child {
+  border-bottom: none;
+}
+
+.rateServiceName {
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rateNum {
+  text-align: center;
+  color: #666;
+  min-width: 40px;
+}
+
+.rateBadge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  min-width: 48px;
+  text-align: center;
+}
+
+.rateHigh {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.rateMid {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.rateLow {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Empty state */
+.empty {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.875rem;
+  padding: 2rem;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 4rem;
+  color: var(--primary-mid);
+  font-family: 'Co Headline', sans-serif;
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .summaryGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .serviceLabel {
+    width: 100px;
+  }
+}

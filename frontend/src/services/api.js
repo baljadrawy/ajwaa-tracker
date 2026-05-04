@@ -117,3 +117,8 @@ export const logsAPI = {
   get: (id) => api.get(`/logs/${id}`),
   clear: () => api.delete('/logs'),
 }
+
+// Analytics APIs
+export const analyticsAPI = {
+  stats: () => api.get('/tickets/stats/analytics'),
+}

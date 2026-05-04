@@ -12,6 +12,7 @@ import {
   Briefcase,
   AlertTriangle,
   BarChart2,
+  TrendingUp,
 } from 'lucide-react'
 import styles from './Layout.module.css'
 
@@ -50,6 +51,12 @@ export function Layout({ children }) {
       label: 'مؤشرات الأداء',
       href: '/insights',
       icon: BarChart2,
+      roles: ['admin', 'manager'],
+    },
+    {
+      label: 'تحليلات التذاكر',
+      href: '/analytics',
+      icon: TrendingUp,
       roles: ['admin', 'manager'],
     },
     {

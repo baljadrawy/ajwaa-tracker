@@ -70,6 +70,113 @@ router.get('/stats/insights', authenticateToken, roleCheck('admin', 'manager'), 
   }
 });
 
+// GET /api/tickets/stats/analytics — تحليلات التذاكر والخدمات
+router.get('/stats/analytics', authenticateToken, roleCheck('admin', 'manager'), async (req, res) => {
+  try {
+    // 1) الاتجاه الزمني — آخر 6 أشهر
+    const trendResult = await pool.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', observed_date), 'YYYY-MM') AS month,
+        COUNT(*)                                                 AS total,
+        COUNT(*) FILTER (WHERE status = 'مغلقة')                AS closed,
+        COUNT(*) FILTER (WHERE priority = 'حرجة')               AS critical
+      FROM tickets
+      WHERE observed_date >= DATE_TRUNC('month', NOW()) - INTERVAL '5 months'
+      GROUP BY DATE_TRUNC('month', observed_date)
+      ORDER BY DATE_TRUNC('month', observed_date)
+    `);
+
+    // 2) أكثر الخدمات تذاكر مفتوحة (جديدة + تحت الإجراء)
+    const topServicesResult = await pool.query(`
+      SELECT
+        COALESCE(s.name, 'عامة')              AS service_name,
+        COUNT(*)                               AS total,
+        COUNT(*) FILTER (WHERE t.status = 'جديدة')         AS new_count,
+        COUNT(*) FILTER (WHERE t.status = 'تحت الإجراء')   AS in_progress,
+        COUNT(*) FILTER (WHERE t.status = 'مغلقة')         AS closed
+      FROM tickets t
+      LEFT JOIN services s ON t.service_id = s.id
+      GROUP BY COALESCE(s.name, 'عامة')
+      HAVING COUNT(*) > 0
+      ORDER BY (COUNT(*) FILTER (WHERE t.status != 'مغلقة')) DESC
+      LIMIT 10
+    `);
+
+    // 3) معدل الإغلاق لكل خدمة (أعلى 10)
+    const closureRateResult = await pool.query(`
+      SELECT
+        COALESCE(s.name, 'عامة')              AS service_name,
+        COUNT(*)                               AS total,
+        COUNT(*) FILTER (WHERE t.status = 'مغلقة') AS closed,
+        CASE WHEN COUNT(*) > 0
+          THEN ROUND((COUNT(*) FILTER (WHERE t.status = 'مغلقة')::numeric / COUNT(*)) * 100)
+          ELSE 0
+        END AS closure_rate
+      FROM tickets t
+      LEFT JOIN services s ON t.service_id = s.id
+      GROUP BY COALESCE(s.name, 'عامة')
+      HAVING COUNT(*) >= 2
+      ORDER BY closure_rate DESC
+      LIMIT 10
+    `);
+
+    // 4) ملخص عام
+    const summaryResult = await pool.query(`
+      SELECT
+        COUNT(*)                                        AS total,
+        COUNT(*) FILTER (WHERE status = 'جديدة')        AS new_count,
+        COUNT(*) FILTER (WHERE status = 'تحت الإجراء')  AS in_progress,
+        COUNT(*) FILTER (WHERE status = 'مغلقة')        AS closed,
+        COUNT(*) FILTER (WHERE priority = 'حرجة')       AS critical,
+        COUNT(*) FILTER (WHERE impact = 'عائق تشغيل')   AS blocker,
+        COUNT(*) FILTER (WHERE responsibility = 'شركة علم') AS elm,
+        COUNT(*) FILTER (WHERE responsibility = 'الهيئة')   AS gaca
+      FROM tickets
+    `);
+
+    const s = summaryResult.rows[0];
+
+    res.json({
+      summary: {
+        total:       parseInt(s.total),
+        new_count:   parseInt(s.new_count),
+        in_progress: parseInt(s.in_progress),
+        closed:      parseInt(s.closed),
+        critical:    parseInt(s.critical),
+        blocker:     parseInt(s.blocker),
+        closure_rate: s.total > 0 ? Math.round((parseInt(s.closed) / parseInt(s.total)) * 100) : 0,
+        elm:         parseInt(s.elm),
+        gaca:        parseInt(s.gaca),
+      },
+      trend: trendResult.rows.map(r => ({
+        month:    r.month,
+        total:    parseInt(r.total),
+        closed:   parseInt(r.closed),
+        critical: parseInt(r.critical),
+      })),
+      topServices: topServicesResult.rows.map(r => ({
+        service_name: r.service_name,
+        total:       parseInt(r.total),
+        new_count:   parseInt(r.new_count),
+        in_progress: parseInt(r.in_progress),
+        closed:      parseInt(r.closed),
+        open:        parseInt(r.new_count) + parseInt(r.in_progress),
+      })),
+      closureRates: closureRateResult.rows.map(r => ({
+        service_name:  r.service_name,
+        total:         parseInt(r.total),
+        closed:        parseInt(r.closed),
+        closure_rate:  parseInt(r.closure_rate),
+      })),
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    logError({ req, statusCode: 500, error });
+    res.status(500).json({ error: 'حدث خطأ في الخادم' });
+  }
+});
+
+
 // ⚠️ مهم: /stats/dashboard يجب أن يكون قبل /:id
 router.get('/stats/dashboard', authenticateToken, async (req, res) => {
   try {
