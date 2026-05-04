@@ -4,6 +4,69 @@
 
 ---
 
+## 2026-05-04 — إصلاح ملفات مبتورة + استعادة قاعدة البيانات
+
+### 1. مشكلة تقطع الملفات (File Truncation)
+
+**السبب:** أدوات التعديل (Edit/Write) عند العمل على Windows NTFS mount تقطع الملفات أحياناً بدون إشعار.
+
+**الملفات التي تأثرت وأُصلحت:**
+
+| الملف | السطر المبتور | الإصلاح |
+|-------|--------------|---------|
+| `frontend/src/pages/TicketsPage.jsx` | 336 (وسط JSX) | إعادة كتابة كاملة عبر bash |
+| `frontend/src/pages/TicketsPage.module.css` | 341 (media query) | إضافة النهاية الناقصة |
+| `frontend/src/pages/ServicesPage.jsx` | 572 (أزرار modal) | إضافة النهاية الناقصة |
+| `backend/src/routes/export.js` | 182 (catch block) | إضافة catch + formatDate + module.exports |
+| `backend/src/routes/tickets.js` | 456 (DELETE endpoint) | إضافة منطق حذف المنسق + cleanup |
+
+**الدرس:** دائماً تحقق من اكتمال الملفات بـ `tail -5` و `wc -l` قبل الـ push.
+
+**أمر الفحص الشامل:**
+```bash
+for f in frontend/src/pages/*.jsx frontend/src/pages/*.css backend/src/routes/*.js; do
+  LAST=$(tail -1 "$f" | tr -d '[:space:]')
+  echo "$LAST  $f"
+done
+```
+
+---
+
+### 2. فقدان قاعدة البيانات واستعادتها
+
+**السبب:** إعادة بناء الحاويات أنشأت postgres volume جديداً فارغاً.
+
+**الحل:**
+- استُخرجت التذاكر من ملف `ajwaa-tickets-2026-05-03.xlsx` (147 تذكرة)
+- أُنشئ سكريبت `restore_tickets.sql` تلقائياً بـ Python
+  - تحويل التواريخ العربية إلى ISO
+  - ربط الخدمات والمستخدمين بـ subqueries
+  - `ON CONFLICT DO NOTHING` لمنع التكرار
+  - تحديث `ticket_number_seq` إلى 149
+
+**ترتيب الاستعادة الكامل:**
+```bash
+psql < seed_data.sql                    # مستخدمون + خدمات + قطاعات
+psql < db/migrate_add_mufaala_status.sql # migration حالة مفعلة
+psql < restore_tickets.sql              # 147 تذكرة
+```
+
+**النتيجة:** users=6, services=62, tickets=147 ✅
+
+---
+
+### 3. إعداد النسخ الاحتياطي التلقائي
+
+```bash
+# crontab يومي الساعة 2 صباحاً
+0 2 * * * cd ~/ajwaa-tracker && docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U ajwaa ajwaa_db > ~/backups/backup_$(date +\%Y\%m\%d).sql
+```
+
+### الملفات المضافة
+- `restore_tickets.sql` — سكريبت استعادة التذاكر (مُضاف لـ GitHub)
+
+---
+
 ## 2026-05-03 — تصدير Excel للمنسق + إصلاح الملاحظات العامة + إضافة حالة "مفعلة" + فلتر المنسق + إصلاح التاريخ
 
 ### 1. تفعيل تصدير Excel للمنسق
@@ -428,60 +491,4 @@ docker compose exec -T postgres psql -U ajwaa -d ajwaa_db < db/migrate_add_mufaa
 ### الملفات المعدّلة
 - `frontend/src/pages/NewTicketPage.jsx` + `.module.css`
 - `frontend/src/pages/SettingsPage.jsx` + `.module.css`
-- `frontend/src/pages/ServicesPage.jsx` + `.module.css`
-- `frontend/src/services/api.js`
-- `frontend/Dockerfile`
-- `backend/src/routes/sectors.js`
-- `backend/src/routes/services.js`
-- `seed_data.sql` (جديد)
-
----
-
-## 2026-04-13 — مراجعة شاملة وإصلاح أخطاء Backend
-
-### المشاكل المكتشفة والمصلحة
-
-#### 1. أسماء أعمدة خاطئة في tickets.js
-| الخاطئ | الصحيح في قاعدة البيانات |
-|--------|--------------------------|
-| `detection_date` | `observed_date` |
-| `closure_date` | `closed_date` |
-| `audit_logs` | `audit_log` (اسم الجدول) |
-| `changed_by` | `user_id` (في audit_log) |
-| `comment_text` | `content` (في comments) |
-| `created_by` | `user_id` (في comments) |
-| `uploaded_by` | `user_id` (في attachments) |
-| `uploaded_at` | `created_at` (في attachments) |
-
-#### 2. ترتيب المسارات في tickets.js
-- `/stats/dashboard` كان بعد `/:id` فيُعالَج كـ id — نُقل للأعلى
-
-#### 3. sectors.js — أخطاء departments و phases
-- `/departments/list` كان يستعلم `department` من `services` — صُحح للاستعلام من جدول `departments` مباشرة
-- `/phases/list` نفس المشكلة — صُحح للاستعلام من جدول `phases`
-- أُضيفت endpoints لإنشاء departments و phases
-
-#### 4. attachments.js
-- أعمدة مصلحة: `user_id`, `file_size`, `mime_type`
-
-#### 5. export.js
-- أسماء أعمدة مصلحة: `observed_date`, `closed_date`
-
-#### 6. init.sql
-- هاش كلمة المرور الافتراضية كان وهمياً — استُبدل بهاش bcrypt حقيقي لـ `admin123`
-
-### الملفات المعدّلة
-- `backend/src/routes/tickets.js` — إعادة كتابة كاملة
-- `backend/src/routes/sectors.js` — إعادة كتابة كاملة
-- `backend/src/routes/attachments.js` — تصحيح أسماء الأعمدة
-- `backend/src/routes/export.js` — تصحيح أسماء الأعمدة
-- `db/init.sql` — هاش bcrypt صحيح
-- `frontend/src/services/api.js` — تصحيح مسار stats + إزالة localStorage
-
----
-
-## 2026-04-13 — تجهيز التثبيت على Raspberry Pi
-
-### التعديلات
-- **تصحيح CORS** في `backend/src/app.js`: تغيير من origin ثابت إلى regex يقبل أي IP محلي (192.168.x.x, 10.x.x.x, 172.16-31.x.x) — ضروري لأن الرازبري باي يظهر بـ IP شبكة لا localhost
-- **إضافة سكريبت التثبيت** `install-rpi.sh`: يتحقق من Docker، المنافذ، ينشئ المجلدات، يبني الحاويات، ويطبع رابط الوصول مع الـ 
+- `frontend/src/
