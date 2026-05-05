@@ -28,14 +28,13 @@ router.get('/stats/insights', authenticateToken, roleCheck('admin', 'manager'), 
         COUNT(t.id) FILTER (WHERE t.responsibility = 'الهيئة')        AS resp_gaca,
         COUNT(t.id) FILTER (WHERE t.responsibility = 'شركة علم')      AS resp_elm
       FROM users u
-      LEFT JOIN (
-        SELECT t2.*, s2.coordinator_id AS svc_coordinator
-        FROM tickets t2
-        LEFT JOIN services s2 ON s2.id = t2.service_id
-      ) t ON (t.svc_coordinator = u.id OR (t.service_id IS NULL AND t.created_by = u.id))
+      LEFT JOIN tickets t ON (
+        t.service_id IN (SELECT id FROM services WHERE coordinator_id = u.id)
+        OR (t.service_id IS NULL AND t.created_by = u.id)
+      )
       WHERE u.role = 'coordinator' AND u.is_active = true
       GROUP BY u.id, u.full_name
-      ORDER BY total DESC
+      ORDER BY COUNT(t.id) DESC
     `);
 
     const coordinators = result.rows.map(r => ({
