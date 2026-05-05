@@ -14,9 +14,9 @@ const COLORS = {
   rowAlt:   'F4F6FB',
   border:   'E5E7EB',
   status: {
-    'جديدة':         'DBEAFE',  // أزرق فاتح
-    'تحت الإجراء':   'FEF3C7',  // أصفر فاتح
-    'مغلقة':         'D1FAE5',  // أخضر فاتح
+    'جديدة':         'DBEAFE',
+    'تحت الإجراء':   'FEF3C7',
+    'مغلقة':         'D1FAE5',
   },
   priority: {
     'حرجة':    'FEE2E2',
@@ -36,6 +36,7 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
         t.ticket_number, s.name as service_name,
         t.environment, t.description,
         t.classification, t.impact, t.priority, t.status, t.responsibility,
+        t.support_required,
         t.observed_date, t.expected_resolution_date, t.closed_date,
         u.full_name as created_by_name
       FROM tickets t
@@ -47,7 +48,6 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
     const params = [];
     let idx = 1;
 
-    // المنسق يصدّر تذاكر خدماته + تذاكره العامة فقط
     if (isCoordinator) {
       queryStr += ` AND (s.coordinator_id = $${idx} OR (t.service_id IS NULL AND t.created_by = $${idx}))`;
       params.push(req.user.id);
@@ -78,7 +78,7 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
     });
 
-    // عرض الأعمدة
+    // عرض الأعمدة — 14 عمود الآن
     sheet.columns = [
       { key: 'ticket_number',             width: 14 },
       { key: 'service_name',              width: 30 },
@@ -89,16 +89,18 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
       { key: 'priority',                  width: 14 },
       { key: 'status',                    width: 16 },
       { key: 'responsibility',            width: 16 },
+      { key: 'support_required',          width: 35 },
       { key: 'observed_date',             width: 16 },
       { key: 'expected_resolution_date',  width: 20 },
       { key: 'closed_date',               width: 16 },
       { key: 'created_by_name',           width: 20 },
     ];
 
-    // صف الرأس
+    // صف الرأس — 14 عمود
     const headers = [
       'رقم التذكرة', 'الخدمة', 'حالة البيئة', 'وصف الملاحظة',
       'التصنيف', 'الأثر', 'الأولوية', 'الحالة', 'المسؤولية',
+      'الدعم المطلوب',
       'تاريخ الرصد', 'تاريخ الحل المتوقع', 'تاريخ الإغلاق', 'أنشئ بواسطة',
     ];
 
@@ -128,6 +130,7 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
         t.priority || '',
         t.status || '',
         t.responsibility || '',
+        t.support_required || '',
         formatDate(t.observed_date),
         formatDate(t.expected_resolution_date),
         formatDate(t.closed_date),
@@ -138,17 +141,18 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
       const isAlt = i % 2 === 1;
 
       row.eachCell((cell, colNum) => {
-        // لون خلفية الصف
-        const statusColor  = colNum === 8  ? COLORS.status[t.status]   : null;
-        const priorityColor= colNum === 7  ? COLORS.priority[t.priority]: null;
+        // عمود الحالة = 8، عمود الأولوية = 7، عمود الدعم المطلوب = 10
+        const statusColor   = colNum === 8  ? COLORS.status[t.status]    : null;
+        const priorityColor = colNum === 7  ? COLORS.priority[t.priority] : null;
         const bgColor = statusColor || priorityColor || (isAlt ? COLORS.rowAlt : 'FFFFFF');
 
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
         cell.font = { name: 'Arial', size: 10 };
         cell.alignment = {
           vertical: 'middle',
-          horizontal: colNum === 4 ? 'right' : 'center',
-          wrapText: colNum === 4,
+          // عمود الوصف (4) وعمود الدعم المطلوب (10) محاذاة يمين مع wrap
+          horizontal: (colNum === 4 || colNum === 10) ? 'right' : 'center',
+          wrapText: (colNum === 4 || colNum === 10),
           readingOrder: 'rightToLeft',
         };
         cell.border = {
@@ -163,11 +167,11 @@ router.get('/excel', authenticateToken, roleCheck('admin', 'manager', 'coordinat
     // تجميد صف الرأس
     sheet.views = [{ state: 'frozen', ySplit: 1, rightToLeft: true }];
 
-    // فلتر تلقائي
-    sheet.autoFilter = { from: 'A1', to: `M1` };
+    // فلتر تلقائي — N1 بدلاً من M1 (14 عمود)
+    sheet.autoFilter = { from: 'A1', to: 'N1' };
 
     // صف الملخص
-    const summaryRow = sheet.addRow([`إجمالي التذاكر: ${tickets.length}`, '', '', '', '', '', '', '', '', '', '', '', '']);
+    const summaryRow = sheet.addRow([`إجمالي التذاكر: ${tickets.length}`, '', '', '', '', '', '', '', '', '', '', '', '', '']);
     summaryRow.getCell(1).font = { bold: true, color: { argb: COLORS.headerBg }, size: 10 };
     summaryRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0E7FF' } };
 
