@@ -291,6 +291,15 @@
   white-space: nowrap;
 }
 
+.impactBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .classCell { font-size: 0.82rem; color: #6b7280; white-space: nowrap; }
 
 .creatorCell {

@@ -15,6 +15,13 @@ const PRIORITY_COLORS = {
   'منخفضة': '#10b981',
 }
 
+const IMPACT_COLORS = {
+  'عائق تشغيل':       { bg: '#fef2f2', color: '#dc2626' },
+  'عائق غير تشغيلي': { bg: '#fff7ed', color: '#ea580c' },
+  'غير عائق':         { bg: '#eff6ff', color: '#2563eb' },
+  'تحسيني':           { bg: '#f0fdf4', color: '#15803d' },
+}
+
 const STATUS_COLORS = {
   'جديدة': { bg: '#eff6ff', color: '#1d4ed8' },
   'تحت الإجراء': { bg: '#fff7ed', color: '#c2410c' },
@@ -220,6 +227,7 @@ export function TicketsPage() {
             <select value={filterImpact} onChange={(e) => { setFilterImpact(e.target.value); setCurrentPage(1) }} className={styles.filterSelect}>
               <option value="">جميع مستويات الأثر</option>
               <option value="عائق تشغيل">عائق تشغيل</option>
+              <option value="عائق غير تشغيلي">عائق غير تشغيلي</option>
               <option value="غير عائق">غير عائق</option>
               <option value="تحسيني">تحسيني</option>
             </select>
@@ -274,6 +282,7 @@ export function TicketsPage() {
                   <th>الوصف</th>
                   <th>الحالة</th>
                   <th>الأولوية</th>
+                  <th>الأثر</th>
                   <th>التصنيف</th>
                   {(isAdmin || isManager) && <th><User size={13} style={{verticalAlign:'middle'}} /> المنشئ</th>}
                   <th><Calendar size={13} style={{verticalAlign:'middle'}} /> التاريخ</th>
@@ -312,6 +321,17 @@ export function TicketsPage() {
                         style={{ backgroundColor: PRIORITY_COLORS[ticket.priority] || '#6b7280' }}
                       >
                         {ticket.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={styles.impactBadge}
+                        style={{
+                          background: IMPACT_COLORS[ticket.impact]?.bg || '#f3f4f6',
+                          color: IMPACT_COLORS[ticket.impact]?.color || '#374151',
+                        }}
+                      >
+                        {ticket.impact || '-'}
                       </span>
                     </td>
                     <td className={styles.classCell}>{ticket.classification || '-'}</td>
