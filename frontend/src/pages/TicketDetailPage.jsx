@@ -69,6 +69,7 @@ export function TicketDetailPage() {
       responsibility: ticket.responsibility || '',
       expectedResolutionDate: ticket.expected_resolution_date
         ? ticket.expected_resolution_date.slice(0, 10) : '',
+      supportRequired: ticket.support_required || '',
     })
     setNewAttachments([])
     setEditModal(true)
@@ -308,6 +309,12 @@ export function TicketDetailPage() {
                   <span className={styles.detailLabel}>الأثر</span>
                   <span className={styles.detailValue}>{ticket.impact}</span>
                 </div>
+                {ticket.support_required && (
+                  <div className={styles.detailItem} style={{gridColumn: '1 / -1'}}>
+                    <span className={styles.detailLabel}>الدعم المطلوب</span>
+                    <span className={styles.detailValue}>{ticket.support_required}</span>
+                  </div>
+                )}
                 <div className={styles.detailItem}>
                   <span className={styles.detailLabel}>المسؤولية</span>
                   <span className={styles.detailValue}>{ticket.responsibility}</span>
@@ -497,6 +504,7 @@ export function TicketDetailPage() {
                       <label>الأثر *</label>
                       <select value={editForm.impact} onChange={e => setEditForm(p => ({...p, impact: e.target.value}))} required className={styles.editSelect}>
                         <option value="عائق تشغيل">عائق تشغيل</option>
+                        <option value="عائق غير تشغيلي">عائق غير تشغيلي</option>
                         <option value="غير عائق">غير عائق</option>
                         <option value="تحسيني">تحسيني</option>
                       </select>
@@ -525,6 +533,10 @@ export function TicketDetailPage() {
                   <div className={styles.editGroup} style={{marginTop: 12}}>
                     <label>وصف الملاحظة *</label>
                     <textarea value={editForm.description} onChange={e => setEditForm(p => ({...p, description: e.target.value}))} required rows={5} className={styles.editTextarea} />
+                  </div>
+                  <div className={styles.editGroup} style={{marginTop: 12}}>
+                    <label>الدعم المطلوب <span style={{fontSize:'0.75rem', color:'#888'}}>(اختياري)</span></label>
+                    <textarea value={editForm.supportRequired} onChange={e => setEditForm(p => ({...p, supportRequired: e.target.value}))} rows={3} placeholder="ما الذي تحتاجه لإغلاق هذه التذكرة؟" className={styles.editTextarea} />
                   </div>
                   {/* رفع مرفقات إضافية */}
                   <div className={styles.editGroup} style={{marginTop: 12}}>

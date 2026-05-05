@@ -19,6 +19,7 @@ export function NewTicketPage() {
     impact: '',
     priority: '',
     responsibility: '',
+    supportRequired: '',
   })
 
   useEffect(() => {
@@ -54,7 +55,6 @@ export function NewTicketPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    // serviceId اختياري — التذكرة العامة لا تحتاج خدمة
     if (!formData.environment || !formData.description ||
         !formData.classification || !formData.impact || !formData.priority || !formData.responsibility) {
       toast.error('يرجى ملء جميع الحقول المطلوبة')
@@ -66,7 +66,6 @@ export function NewTicketPage() {
       const response = await ticketAPI.create(formData)
       const ticketId = response.data?.id
 
-      // رفع المرفقات بعد إنشاء التذكرة
       if (ticketId && attachments.length > 0) {
         for (const file of attachments) {
           try {
@@ -135,6 +134,7 @@ export function NewTicketPage() {
               <select id="impact" name="impact" value={formData.impact} onChange={handleChange} required className={styles.select}>
                 <option value="">اختر الأثر</option>
                 <option value="عائق تشغيل">عائق تشغيل</option>
+                <option value="عائق غير تشغيلي">عائق غير تشغيلي</option>
                 <option value="غير عائق">غير عائق</option>
                 <option value="تحسيني">تحسيني</option>
               </select>
@@ -167,6 +167,16 @@ export function NewTicketPage() {
               id="description" name="description" value={formData.description}
               onChange={handleChange} required rows={6}
               placeholder="أدخل وصفاً تفصيلياً للملاحظة..."
+              className={styles.textarea}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="supportRequired">الدعم المطلوب <span className={styles.optionalHint}>(اختياري)</span></label>
+            <textarea
+              id="supportRequired" name="supportRequired" value={formData.supportRequired}
+              onChange={handleChange} rows={3}
+              placeholder="ما الذي تحتاجه لإغلاق هذه التذكرة؟ (جهة الدعم، نوع التدخل المطلوب...)"
               className={styles.textarea}
             />
           </div>
