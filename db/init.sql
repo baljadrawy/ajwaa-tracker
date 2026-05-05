@@ -37,7 +37,7 @@ CREATE TYPE environment_type AS ENUM ('Operation Support', 'BA');
 
 CREATE TYPE classification_type AS ENUM ('تشغيلي', 'تحليلي', 'نقل البيانات');
 
-CREATE TYPE impact_type AS ENUM ('عائق تشغيل', 'غير عائق', 'تحسيني');
+CREATE TYPE impact_type AS ENUM ('عائق تشغيل', 'عائق غير تشغيلي', 'غير عائق', 'تحسيني');
 
 CREATE TYPE priority_type AS ENUM ('حرجة', 'عالية', 'متوسطة', 'منخفضة');
 
