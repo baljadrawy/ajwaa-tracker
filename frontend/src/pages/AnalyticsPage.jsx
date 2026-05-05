@@ -28,7 +28,7 @@ const IMPACT_COLORS = {
 }
 const RESP_COLORS = { 'الهيئة': '#140046', 'شركة علم': '#23EBA5' }
 
-export default function AnalyticsPage() {
+export function AnalyticsPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
