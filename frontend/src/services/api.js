@@ -120,5 +120,5 @@ export const logsAPI = {
 
 // Analytics APIs
 export const analyticsAPI = {
-  stats: () => api.get('/tickets/stats/analytics'),
+  stats: (params) => api.get('/tickets/stats/analytics', { params }),
 }
